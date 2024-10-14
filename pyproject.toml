@@ -1,0 +1,14 @@
+[project]
+name = "distil-xlstm"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "datasets>=3.0.1",
+    "lightning>=2.4.0",
+    "torch>=2.4.1",
+    "torchmetrics>=1.4.3",
+    "transformers>=4.45.2",
+    "xlstm>=1.0.6",
+]
