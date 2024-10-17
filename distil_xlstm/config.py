@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional
 
-from xlstm import xLSTMBlockStackConfig
+from xlstm import xLSTMLMModelConfig
 
 
 @dataclass
@@ -30,7 +30,7 @@ class DistilxLSTMConfig:
         A flag indicating whether `sLSTM` blocks should be added to the *sequence mixing* stack.
     """
 
-    stack_config: xLSTMBlockStackConfig
+    stack_config: xLSTMLMModelConfig
     attention_layers: Optional[List[int]] = None
     init_with_qkvo: bool = False
     teacher_model: str = "HuggingFaceH4/zephyr-7b-beta"
