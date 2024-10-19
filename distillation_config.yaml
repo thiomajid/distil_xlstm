@@ -26,6 +26,7 @@ torch_compile: true
 
 output_dir: "distil-xlstm-artifacts"
 logging_dir: "distil-xlstm-logs"
+report_to: "tensorboard"
 logging_steps: 50
 save_steps: 100
 
