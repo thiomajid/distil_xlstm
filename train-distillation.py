@@ -13,5 +13,4 @@ parser = HfArgumentParser(KDArguments)
 args: KDArguments = parser.parse_yaml_file(yaml_file="./distillation_config.yaml")[0]
 xlstm_cfg: xLSTMLMModelConfig = OmegaConf.load("./xlstm_config.yaml")
 model = xLSTMLMModel(xlstm_cfg)
-
 pprint(xlstm_cfg)
