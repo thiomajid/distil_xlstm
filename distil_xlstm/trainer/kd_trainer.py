@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from einops import rearrange
 from torch import nn
 from transformers import AutoModelForCausalLM, Trainer
+from transformers.modeling_outputs import CausalLMOutput
 from xlstm import xLSTMLMModel
 
 from distil_xlstm.config import KDArguments
@@ -57,7 +58,9 @@ class KDTrainer(Trainer):
             _description_
         """
 
-        student_logits = self.student(inputs["input_ids"])
+        student_logits: torch.Tensor = self.student(inputs["input_ids"])
+        student_output = CausalLMOutput(logits=student_logits.detach())
+
         student_logits = rearrange(student_logits, "b s d -> (b s) d")
 
         teacher_logits = self._teacher_forward(inputs).detach()
@@ -82,4 +85,4 @@ class KDTrainer(Trainer):
             self.config.ce_weight * ce_loss + self.config.kl_weight * kd_loss
         )
 
-        return total_loss
+        return (total_loss, student_output) if return_outputs else total_loss
