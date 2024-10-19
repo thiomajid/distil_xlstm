@@ -1,4 +1,44 @@
 import math
+from typing import Literal
+
+ParamScheduleType = Literal["increasing", "decreasing", "no-op"]
+ScheduleFnVariant = Literal["linear", "exponential", "logarithmic", "cosine"]
+
+
+def create_scalar_scheduler(
+    schedule_type: ParamScheduleType,
+    *,
+    initial_value: float,
+    final_value: float,
+    total_steps: int,
+    variant: ScheduleFnVariant,
+):
+    match schedule_type:
+        case "increasing":
+            return ScalarIncrementScheduler(
+                initial_value=initial_value,
+                final_value=final_value,
+                variant=variant,
+                total_steps=total_steps,
+            )
+
+        case "decreasing":
+            return ScalarAnnealingScheduler(
+                initial_value=initial_value,
+                final_value=final_value,
+                variant=variant,
+                total_steps=total_steps,
+            )
+        case "no-op":
+            return NoOpScalarScheduler(
+                initial_value=initial_value,
+                final_value=final_value,
+                variant=variant,
+                total_steps=total_steps,
+            )
+
+        case _:
+            raise ValueError(f"{schedule_type} is not a supported scalar scheduler")
 
 
 class ScalarScheduler:
@@ -7,37 +47,51 @@ class ScalarScheduler:
         initial_value: float,
         final_value: float,
         total_steps: int,
-        schedule_type: str = "linear",
+        variant: ScheduleFnVariant = "linear",
     ):
         super().__init__()
 
-        assert schedule_type in [
+        assert variant in [
             "linear",
             "exponential",
             "logarithmic",
             "cosine",
-        ], f"{schedule_type} is an invalid scalar schedule type"
+        ], f"{variant} is an invalid scalar schedule type"
 
         self._value = initial_value
         self.final_value = final_value
         self.total_steps = total_steps
-        self.schedule_type = schedule_type
+        self.variant: ScheduleFnVariant = variant
         self.current_step = 0
 
     def step(self):
         pass
 
     def get_value(self) -> float:
-        pass
+        self._value
 
 
-class ScalarAnnealing(ScalarScheduler):
+class NoOpScalarScheduler(ScalarScheduler):
     def __init__(
         self,
         initial_value,
         final_value,
         total_steps,
-        schedule_type="linear",
+        variant: ScheduleFnVariant = "linear",
+    ):
+        super().__init__(initial_value, final_value, total_steps, variant)
+
+    def step(self):
+        self.current_step += 1
+
+
+class ScalarAnnealingScheduler(ScalarScheduler):
+    def __init__(
+        self,
+        initial_value,
+        final_value,
+        total_steps,
+        schedule_type: ScheduleFnVariant = "linear",
     ):
         super().__init__(initial_value, final_value, total_steps, schedule_type)
 
@@ -49,14 +103,19 @@ class ScalarAnnealing(ScalarScheduler):
         # Ensure progress is capped at 1.0
         progress = min(self.current_step / self.total_steps, 1.0)
 
-        if self.schedule_type == "linear":
-            self.current_temperature = self._linear_annealing(progress)
-        elif self.schedule_type == "exponential":
-            self.current_temperature = self._exponential_annealing(progress)
-        elif self.schedule_type == "logarithmic":
-            self.current_temperature = self._logarithmic_annealing()
-        elif self.schedule_type == "cosine":
-            self.current_temperature = self._cosine_annealing(progress)
+        match self.variant:
+            case "linear":
+                self.current_temperature = self._linear_annealing(progress)
+            case "exponential":
+                self.current_temperature = self._exponential_annealing(progress)
+            case "logarithmic":
+                self.current_temperature = self._logarithmic_annealing()
+            case "cosine":
+                self.current_temperature = self._cosine_annealing(progress)
+            case _:
+                raise ValueError(
+                    f"{self.variant} is an invalid schedule function variant"
+                )
 
     def _linear_annealing(self, progress):
         """Linear annealing formula (works for both increase and decrease)."""
@@ -81,10 +140,6 @@ class ScalarAnnealing(ScalarScheduler):
             1 + math.cos(math.pi * progress)
         )
 
-    def get_temperature(self):
-        """Returns the current temperature value."""
-        return self.current_temperature
 
-
-class ScalarIncrement(ScalarScheduler):
+class ScalarIncrementScheduler(ScalarScheduler):
     pass

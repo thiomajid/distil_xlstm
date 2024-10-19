@@ -6,7 +6,7 @@ from transformers import AutoModelForCausalLM, Trainer
 from transformers.modeling_outputs import CausalLMOutput
 from xlstm import xLSTMLMModel
 
-from distil_xlstm.config import KDArguments
+from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
 class KDTrainer(Trainer):
@@ -72,7 +72,6 @@ class KDTrainer(Trainer):
 
         # Compute the cross-entropy loss
         ce_loss = self.ce_loss_fn(student_logits, labels)
-
         student_probs = F.log_softmax(student_logits / self.config.temperature, dim=-1)
         teacher_probs = F.softmax(teacher_logits / self.config.temperature, dim=-1)
 

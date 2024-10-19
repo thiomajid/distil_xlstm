@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 
 from transformers import TrainingArguments
 
+from ..optim.scheduler import ParamScheduleType
+
 
 @dataclass
 class KDArguments(TrainingArguments):
@@ -15,28 +17,39 @@ class KDArguments(TrainingArguments):
         metadata={"help": "Ratio of CE loss"},
     )
 
-    max_ce_weight: float = field(
+    final_ce_weight: float = field(
         default=1,
         metadata={
-            "help": "The maximum value that the ce_weight can take during training"
+            "help": "The maximum/minimum value that the ce_weight can take during training"
         },
     )
+
+    ce_schedule: ParamScheduleType = "no-op"
 
     kl_weight: float = field(
         default=0.1,
         metadata={"help": "Ratio o KL loss"},
     )
 
-    max_kl_weight: float = field(
+    final_kl_weight: float = field(
         default=1,
         metadata={
-            "help": "The maximum value that the kl_weight can take during training"
+            "help": "The maximum/minimum value that the kl_weight can take during training"
         },
     )
 
+    kl_schedule: ParamScheduleType = "increase"
+
     temperature: float = field(
-        default=0.7,
+        default=2,
         metadata={"help": "Temperature used to softnen probs"},
     )
 
-    max_temperature: float = field(default=1)
+    final_temperature: float = field(
+        default=1,
+        metadata={
+            "help": "The maximum/minimum value that the temperature can take during training"
+        },
+    )
+
+    temperature_schedule: ParamScheduleType = "decrease"

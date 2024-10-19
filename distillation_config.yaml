@@ -1,0 +1,37 @@
+# Custom training arguments
+teacher_name: HuggingFaceH4/zephyr-7b-beta
+
+# CE-loss args
+ce_weight: 1
+final_ce_weight: 1
+ce_schedule: "no-op"
+
+# KL-loss args
+kl_weight: 0.1
+final_kl_weight: 1
+kl_schedule: "increase"
+
+# Temperature args
+temperature: 2
+final_temperature: 1
+temperature_schedule: "decrease"
+
+# HF TrainerArguments arguments
+num_train_epochs: 2
+gradient_accumulation_steps: 4
+learning_rate: 5e-5
+weight_decay: 1e-3
+lr_scheduler_type: "cosine"
+torch_compile: true
+
+output_dir: "distil-xlstm-artifacts"
+logging_dir: "distil-xlstm-logs"
+logging_steps: 50
+save_steps: 100
+
+data_seed: 123
+fp16: false
+push_to_hub: true
+resume_from_checkpoint: "distil-xlstm-artifacts"
+hub_model_id: "thiomajid/distil-xlstm"
+gradient_checkpointing: true

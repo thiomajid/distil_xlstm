@@ -1,3 +1,7 @@
-from .scheduler import ScalarAnnealing, ScalarIncrement, ScalarScheduler
+from .scheduler import (
+    ScalarAnnealingScheduler,
+    ScalarIncrementScheduler,
+    ScalarScheduler,
+)
 
-__all__ = ["ScalarScheduler", "ScalarAnnealing", "ScalarIncrement"]
+__all__ = ["ScalarScheduler", "ScalarAnnealingScheduler", "ScalarIncrementScheduler"]
