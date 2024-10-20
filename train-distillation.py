@@ -7,7 +7,6 @@ from xlstm import xLSTMLMModel, xLSTMLMModelConfig
 from distil_xlstm.trainer import KDArguments
 
 parser = HfArgumentParser(KDArguments)
-# model_cfg_parser = HfArgumentParser(xLSTMLMModelConfig)
 
 
 args: KDArguments = parser.parse_yaml_file(yaml_file="./distillation_config.yaml")[0]

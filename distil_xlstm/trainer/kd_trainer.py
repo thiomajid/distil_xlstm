@@ -4,8 +4,8 @@ from einops import rearrange
 from torch import nn
 from transformers import AutoModelForCausalLM, Trainer
 from transformers.modeling_outputs import CausalLMOutput
-from xlstm import xLSTMLMModel
 
+from distil_xlstm.modeling import DistilxLSTM
 from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
@@ -13,7 +13,7 @@ class KDTrainer(Trainer):
     def __init__(
         self,
         teacher_model: AutoModelForCausalLM,
-        student_model: xLSTMLMModel,
+        student_model: DistilxLSTM,
         kd_config: KDArguments,
         *args,
         **kwargs,
@@ -36,7 +36,7 @@ class KDTrainer(Trainer):
 
     def compute_loss(
         self,
-        model: xLSTMLMModel,
+        model: DistilxLSTM,
         inputs,
         return_outputs=False,
     ):
@@ -58,10 +58,9 @@ class KDTrainer(Trainer):
             _description_
         """
 
-        student_logits: torch.Tensor = self.student(inputs["input_ids"])
-        student_output = CausalLMOutput(logits=student_logits.detach())
+        student_output: CausalLMOutput = self.student(inputs["input_ids"])
 
-        student_logits = rearrange(student_logits, "b s d -> (b s) d")
+        student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
 
         teacher_logits = self._teacher_forward(inputs).detach()
         teacher_logits = rearrange(teacher_logits, "b s d -> (b s) d")

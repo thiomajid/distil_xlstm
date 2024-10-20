@@ -1,0 +1,69 @@
+from dataclasses import asdict
+from typing import Any, Dict, Optional
+
+from transformers import PretrainedConfig
+from xlstm import (
+    FeedForwardConfig,
+    mLSTMBlockConfig,
+    mLSTMLayerConfig,
+    sLSTMBlockConfig,
+    sLSTMLayerConfig,
+    xLSTMLMModelConfig,
+)
+
+
+class DistilxLSTMConfig(PretrainedConfig):
+    model_type = "mistral"
+
+    def __init__(self, xlstm_cfg: Optional[xLSTMLMModelConfig] = None, **kwargs):
+        super().__init__(**kwargs)
+
+        if xlstm_cfg is None:
+            xlstm_cfg = xLSTMLMModelConfig()
+
+        self.xlstm_cfg = xlstm_cfg
+
+    def to_dict(self) -> Dict[str, Any]:
+        output = super().to_dict()
+
+        # Making sure that 'xlstm_cfg' is serialized
+        output["xlstm_cfg"] = asdict(self.xlstm_cfg)
+        return output
+
+    @classmethod
+    def from_dict(cls, config_dict, **kwargs):
+        xlstm_stack_config_dict: Dict[str, any] = config_dict.pop("xlstm_cfg")
+
+        # mLSTM block config deserialization
+        mlstm_block_dict: Dict[str, any] = xlstm_stack_config_dict.pop(
+            "mlstm_block", None
+        )
+        mlstm_block = None
+        if mlstm_block_dict:
+            mlstm_block = mLSTMBlockConfig(
+                mlstm=mLSTMLayerConfig(**mlstm_block_dict.pop("mlstm")),
+                **mlstm_block_dict,
+            )
+
+        # sLSTM block config deserialization
+        slstm_block_dict: Dict[str, any] = xlstm_stack_config_dict.pop(
+            "slstm_block", None
+        )
+        slstm_block = None
+        if slstm_block_dict:
+            feedforward_dict = slstm_block_dict.pop("feedforward")
+            feedforward_config = FeedForwardConfig(**feedforward_dict)
+            slstm_block = sLSTMBlockConfig(
+                slstm=sLSTMLayerConfig(**slstm_block_dict.pop("slstm")),
+                feedforward=feedforward_config,
+                **slstm_block_dict,
+            )
+
+        # xLSTM stack config deserialization
+        xlstm_cfg = xLSTMLMModelConfig(
+            mlstm_block=mlstm_block,
+            slstm_block=slstm_block,
+            **xlstm_stack_config_dict,
+        )
+
+        return cls(xlstm_cfg=xlstm_cfg, **config_dict)
