@@ -53,3 +53,4 @@ class KDArguments(TrainingArguments):
     )
 
     temperature_schedule: ParamScheduleType = "decrease"
+    xlstm_config_path: str = field(default="./xlstm_config.yaml")

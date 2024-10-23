@@ -13,7 +13,7 @@ from xlstm import (
 
 
 class DistilxLSTMConfig(PretrainedConfig):
-    model_type = "mistral"
+    model_type = "xlstm"
 
     def __init__(self, xlstm_cfg: Optional[xLSTMLMModelConfig] = None, **kwargs):
         super().__init__(**kwargs)
@@ -32,12 +32,15 @@ class DistilxLSTMConfig(PretrainedConfig):
 
     @classmethod
     def from_dict(cls, config_dict, **kwargs):
-        xlstm_stack_config_dict: Dict[str, any] = config_dict.pop("xlstm_cfg")
+        xlstm_config_dict: Dict[str, any] = config_dict.pop("xlstm_cfg")
+        xlstm_cfg = cls.parse_xlstm_config_dict(xlstm_config_dict)
 
+        return cls(xlstm_cfg=xlstm_cfg, **config_dict)
+
+    @staticmethod
+    def parse_xlstm_config_dict(config_dict: Dict[str, any]):
         # mLSTM block config deserialization
-        mlstm_block_dict: Dict[str, any] = xlstm_stack_config_dict.pop(
-            "mlstm_block", None
-        )
+        mlstm_block_dict: Dict[str, any] = config_dict.pop("mlstm_block", None)
         mlstm_block = None
         if mlstm_block_dict:
             mlstm_block = mLSTMBlockConfig(
@@ -46,10 +49,9 @@ class DistilxLSTMConfig(PretrainedConfig):
             )
 
         # sLSTM block config deserialization
-        slstm_block_dict: Dict[str, any] = xlstm_stack_config_dict.pop(
-            "slstm_block", None
-        )
+        slstm_block_dict: Dict[str, any] = config_dict.pop("slstm_block", None)
         slstm_block = None
+
         if slstm_block_dict:
             feedforward_dict = slstm_block_dict.pop("feedforward")
             feedforward_config = FeedForwardConfig(**feedforward_dict)
@@ -63,7 +65,7 @@ class DistilxLSTMConfig(PretrainedConfig):
         xlstm_cfg = xLSTMLMModelConfig(
             mlstm_block=mlstm_block,
             slstm_block=slstm_block,
-            **xlstm_stack_config_dict,
+            **config_dict,
         )
 
-        return cls(xlstm_cfg=xlstm_cfg, **config_dict)
+        return xlstm_cfg

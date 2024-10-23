@@ -1,13 +1,14 @@
 # Custom training arguments
-teacher_name: HuggingFaceH4/zephyr-7b-beta
+teacher_name: "HuggingFaceH4/zephyr-7b-beta"
+xlstm_config_path: "./xlstm_config.yaml"
 
 # CE-loss args
-ce_weight: 1
+ce_weight: 0.2
 final_ce_weight: 1
 ce_schedule: "no-op"
 
 # KL-loss args
-kl_weight: 0.1
+kl_weight: 0.8
 final_kl_weight: 1
 kl_schedule: "increase"
 
@@ -17,7 +18,7 @@ final_temperature: 1
 temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
-num_train_epochs: 2
+num_train_epochs: 1
 gradient_accumulation_steps: 4
 learning_rate: 5e-5
 weight_decay: 1e-3

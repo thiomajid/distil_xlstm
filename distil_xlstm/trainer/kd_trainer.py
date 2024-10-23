@@ -30,9 +30,9 @@ class KDTrainer(Trainer):
         self.kl_loss_fn = nn.KLDivLoss(reduction="batchmean")
 
     @torch.no_grad
-    def _teacher_forward(self, inputs) -> torch.Tensor:
+    def _teacher_forward(self, inputs) -> CausalLMOutput:
         output = self.teacher(**inputs)
-        return output.logits
+        return output
 
     def compute_loss(
         self,
@@ -62,7 +62,7 @@ class KDTrainer(Trainer):
 
         student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
 
-        teacher_logits = self._teacher_forward(inputs).detach()
+        teacher_logits = self._teacher_forward(inputs).logits.detach()
         teacher_logits = rearrange(teacher_logits, "b s d -> (b s) d")
 
         # Reshape labels to match the logits shape
