@@ -14,14 +14,12 @@ class KDTrainer(Trainer):
         self,
         teacher_model: AutoModelForCausalLM,
         student_model: DistilxLSTM,
-        kd_config: KDArguments,
-        *args,
+        args: KDArguments,
         **kwargs,
     ) -> None:
-        super().__init__(model=student_model, *args, **kwargs)
+        super().__init__(args=args, model=student_model, **kwargs)
 
-        self.config = kd_config
-
+        self.args = args
         self.teacher = teacher_model
         self.teacher.eval()
         self.student = student_model
@@ -71,16 +69,16 @@ class KDTrainer(Trainer):
 
         # Compute the cross-entropy loss
         ce_loss = self.ce_loss_fn(student_logits, labels)
-        student_probs = F.log_softmax(student_logits / self.config.temperature, dim=-1)
-        teacher_probs = F.softmax(teacher_logits / self.config.temperature, dim=-1)
+        student_probs = F.log_softmax(student_logits / self.args.temperature, dim=-1)
+        teacher_probs = F.softmax(teacher_logits / self.args.temperature, dim=-1)
 
         # Compute KL divergence loss
         kd_loss = self.kl_loss_fn(student_probs, teacher_probs) * (
-            self.config.temperature**2
+            self.args.temperature**2
         )
 
         total_loss: torch.Tensor = (
-            self.config.ce_weight * ce_loss + self.config.kl_weight * kd_loss
+            self.args.ce_weight * ce_loss + self.args.kl_weight * kd_loss
         )
 
         return (total_loss, student_output) if return_outputs else total_loss

@@ -1,6 +1,10 @@
 # Custom training arguments
 teacher_name: "HuggingFaceH4/zephyr-7b-beta"
+quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
+context_length: 4096
+dataset_url: "Salesforce/wikitext"
+data_subset: "wikitext-103-v1"
 
 # CE-loss args
 ce_weight: 0.2
@@ -33,6 +37,7 @@ save_steps: 100
 
 data_seed: 123
 fp16: false
+use_cpu: false
 push_to_hub: true
 resume_from_checkpoint: "distil-xlstm-artifacts"
 hub_model_id: "thiomajid/distil-xlstm"
