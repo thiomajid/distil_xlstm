@@ -35,10 +35,9 @@ report_to: "tensorboard"
 logging_steps: 50
 save_steps: 100
 
-data_seed: 123
 fp16: false
 use_cpu: false
-push_to_hub: true
+push_to_hub: false
 resume_from_checkpoint: "distil-xlstm-artifacts"
 hub_model_id: "thiomajid/distil-xlstm"
 gradient_checkpointing: true

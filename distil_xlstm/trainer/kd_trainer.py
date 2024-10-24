@@ -56,6 +56,7 @@ class KDTrainer(Trainer):
             _description_
         """
 
+
         student_output: CausalLMOutput = self.student(inputs["input_ids"])
 
         student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
