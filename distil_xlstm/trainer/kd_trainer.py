@@ -36,12 +36,7 @@ class KDTrainer(Trainer):
         output = self.teacher(**inputs)
         return output
 
-    def compute_loss(
-        self,
-        model: DistilxLSTM,
-        inputs,
-        return_outputs=False,
-    ):
+    def compute_loss(self, model: DistilxLSTM, inputs, return_outputs=False, **kwargs):
         """
         Compute the loss as a combination of student cross-entropy loss and knowledge distillation loss
 

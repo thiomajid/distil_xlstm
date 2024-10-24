@@ -27,21 +27,18 @@ def get_dataset(args: KDArguments, *, tokenizer: AutoTokenizer, split: str):
             element["text"],
             truncation=True,
             max_length=args.context_length,
-            return_overflowing_tokens=True,
+            padding="max_length",
             return_length=True,
+            return_tensors="pt",
         )
 
-        input_batch = []
-        for length, input_ids in zip(encodings["length"], encodings["input_ids"]):
-            if length == args.context_length:
-                input_batch.append(input_ids)
-
-        return {"input_ids": input_batch, "labels": input_ids}
+        return encodings
 
     tokenized_data = raw_data.map(
         tokenize_text,
         batched=True,
         remove_columns=raw_data.column_names,
+        desc="Tokenizing the dataset",
     )
 
     return tokenized_data
