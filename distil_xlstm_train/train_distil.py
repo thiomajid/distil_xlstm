@@ -32,6 +32,7 @@ def train_with_distillation():
         xlstm_config_dict = yaml.safe_load(file)
 
     xlstm_cfg = DistilxLSTMConfig.parse_xlstm_config_dict(xlstm_config_dict)
+    xlstm_cfg.vocab_size = len(tokenizer)
     cfg = DistilxLSTMConfig(xlstm_cfg=xlstm_cfg)
     model = DistilxLSTM(config=cfg)
 
