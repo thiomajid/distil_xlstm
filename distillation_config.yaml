@@ -23,7 +23,7 @@ temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
 num_train_epochs: 1
-gradient_accumulation_steps: 4
+gradient_accumulation_steps: 1
 learning_rate: 5e-5
 weight_decay: 1e-3
 lr_scheduler_type: "cosine"
@@ -34,6 +34,7 @@ logging_dir: "distil-xlstm-logs"
 report_to: "tensorboard"
 logging_steps: 50
 save_steps: 100
+hub_private_repo: true
 
 fp16: false
 use_cpu: false

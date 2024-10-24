@@ -15,13 +15,11 @@ def get_dataset(args: KDArguments, *, tokenizer: AutoTokenizer, split: str):
             args.dataset_url,
             args.data_subset,
             split=split,
-            streaming=True,
         )
     else:
         raw_data: HfDataset = load_dataset(
             args.dataset_url,
             split=split,
-            streaming=True,
         )
 
     def tokenize_text(element):

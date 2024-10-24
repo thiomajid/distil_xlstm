@@ -17,7 +17,11 @@ class KDTrainer(Trainer):
         args: KDArguments,
         **kwargs,
     ) -> None:
-        super().__init__(args=args, model=student_model, **kwargs)
+        super().__init__(
+            args=args,
+            model=student_model,
+            **kwargs,
+        )
 
         self.args = args
         self.teacher = teacher_model
@@ -55,7 +59,6 @@ class KDTrainer(Trainer):
         _type_
             _description_
         """
-
 
         student_output: CausalLMOutput = self.student(inputs["input_ids"])
 
