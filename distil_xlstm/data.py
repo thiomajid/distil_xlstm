@@ -43,4 +43,9 @@ def get_dataset(args: KDArguments, *, tokenizer: AutoTokenizer, split: str):
         desc="Tokenizing the dataset",
     )
 
+    tokenized_data.set_format(
+        "torch",
+        columns=["input_ids", "attention_mask", "length"],
+    )
+
     return tokenized_data

@@ -2,7 +2,7 @@ vocab_size: 32_000
 context_length: 2048
 num_blocks: 8
 embedding_dim: 512
-slstm_at: [1, 3, 5]
+slstm_at: "all"
 
 mlstm_block:
   mlstm:
