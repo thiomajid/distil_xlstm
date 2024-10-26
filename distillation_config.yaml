@@ -2,7 +2,6 @@
 teacher_name: "Qwen/Qwen2.5-1.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
-context_length: 4096
 dataset_url: "Salesforce/wikitext"
 data_subset: "wikitext-103-v1"
 train_samples: 5000

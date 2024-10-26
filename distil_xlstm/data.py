@@ -7,7 +7,9 @@ from transformers import AutoTokenizer
 from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
-def get_dataset(args: KDArguments, *, tokenizer: AutoTokenizer, split: str):
+def get_dataset(
+    args: KDArguments, *, max_seq_length: int, tokenizer: AutoTokenizer, split: str
+):
     raw_data: Optional[HfDataset] = None
 
     n_samples = range(args.train_samples)
@@ -28,7 +30,7 @@ def get_dataset(args: KDArguments, *, tokenizer: AutoTokenizer, split: str):
         encodings = tokenizer(
             element["text"],
             truncation=True,
-            max_length=args.context_length,
+            max_length=max_seq_length,
             padding="max_length",
             return_length=True,
             return_tensors="pt",
