@@ -10,17 +10,19 @@ from distil_xlstm.trainer.trainer_arguments import KDArguments
 def get_dataset(args: KDArguments, *, tokenizer: AutoTokenizer, split: str):
     raw_data: Optional[HfDataset] = None
 
+    n_samples = range(args.train_samples)
+
     if args.data_subset is not None:
         raw_data = load_dataset(
             args.dataset_url,
             args.data_subset,
             split=split,
-        )
+        ).select(n_samples)
     else:
-        raw_data: HfDataset = load_dataset(
+        raw_data = load_dataset(
             args.dataset_url,
             split=split,
-        )
+        ).select(n_samples)
 
     def tokenize_text(element):
         encodings = tokenizer(
