@@ -19,7 +19,7 @@ class KDArguments(TrainingArguments):
     train_samples: int = field(default=5000)
 
     teacher_name: str = field(
-        default="HuggingFaceH4/zephyr-7b-beta",
+        default="Qwen/Qwen2.5-1.5B-Instruct",
         metadata={"help": "Name of the model used as teacher model on Hugging Face"},
     )
 

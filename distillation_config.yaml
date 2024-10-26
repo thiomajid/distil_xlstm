@@ -1,5 +1,5 @@
 # Custom training arguments
-teacher_name: "HuggingFaceH4/zephyr-7b-beta"
+teacher_name: "Qwen/Qwen2.5-1.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 context_length: 4096
