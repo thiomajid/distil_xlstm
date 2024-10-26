@@ -14,9 +14,9 @@ class KDArguments(TrainingArguments):
 
     data_subset: Optional[str] = field(default=None)
 
-    context_length: int = field(default=4096)
+    context_length: int
 
-    train_samples: int = field(default=5000)
+    train_samples: int
 
     teacher_name: str = field(
         default="Qwen/Qwen2.5-1.5B-Instruct",
