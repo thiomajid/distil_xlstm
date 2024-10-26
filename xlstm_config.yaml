@@ -1,22 +1,22 @@
-vocab_size: 56_000
-context_length: 4096
-num_blocks: 16
-embedding_dim: 1024
-slstm_at: [1, 3, 5, 7, 9]
+vocab_size: 32_000
+context_length: 2048
+num_blocks: 8
+embedding_dim: 512
+slstm_at: [1, 3, 5]
 
 mlstm_block:
   mlstm:
-    conv1d_kernel_size: 8
-    qkv_proj_blocksize: 16
-    num_heads: 16
+    conv1d_kernel_size: 4
+    qkv_proj_blocksize: 4
+    num_heads: 4
 
 slstm_block:
   slstm:
     backend: "vanilla"
-    num_heads: 16
-    conv1d_kernel_size: 8
+    num_heads: 4
+    conv1d_kernel_size: 4
     bias_init: "powerlaw_blockdependent"
 
   feedforward:
-    proj_factor: 1.3
+    proj_factor: 1.7
     act_fn: "gelu"
