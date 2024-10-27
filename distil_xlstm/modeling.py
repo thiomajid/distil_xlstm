@@ -21,17 +21,18 @@ class DistilxLSTM(PreTrainedModel):
         # Code from original xLSTMLMModel __init__ method
         # Same initialization has xLSTMLMModel but we use the individual components to be able
         # to use things like attention_mask coming from the tokenization step
-        self.xlstm_block_stack = xLSTMBlockStack(config=config.xlstm_cfg)
-
         self.token_embedding = nn.Embedding(
             num_embeddings=config.xlstm_cfg.vocab_size,
             embedding_dim=config.xlstm_cfg.embedding_dim,
         )
+
         self.embedding_dropout = (
             nn.Dropout(config.xlstm_cfg.dropout)
             if config.xlstm_cfg.add_embedding_dropout
             else nn.Identity()
         )
+
+        self.xlstm_block_stack = xLSTMBlockStack(config=config.xlstm_cfg)
 
         self.lm_head = nn.Linear(
             in_features=config.xlstm_cfg.embedding_dim,
