@@ -7,17 +7,17 @@ data_subset: "wikitext-103-v1"
 train_samples: 5000
 
 # CE-loss args
-ce_weight: 0.2
+ce_weight: 0.8
 final_ce_weight: 1
 ce_schedule: "no-op"
 
 # KL-loss args
-kl_weight: 0.8
+kl_weight: 1
 final_kl_weight: 1
 kl_schedule: "increase"
 
 # Temperature args
-temperature: 2
+temperature: 0.7
 final_temperature: 1
 temperature_schedule: "decrease"
 
@@ -34,7 +34,7 @@ output_dir: "distil-xlstm-artifacts"
 logging_dir: "distil-xlstm-logs"
 report_to: "tensorboard"
 logging_steps: 50
-save_steps: 100
+save_steps: 250
 hub_private_repo: true
 
 fp16: false
