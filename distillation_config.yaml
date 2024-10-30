@@ -1,5 +1,5 @@
 # Custom training arguments
-teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
+teacher_name: "Qwen/Qwen2.5-7B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 dataset_url: "Salesforce/wikitext"
