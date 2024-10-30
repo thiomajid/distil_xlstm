@@ -87,7 +87,6 @@ class DistilxLSTM(PreTrainedModel):
         xlstm_config_dict = DistilxLSTMConfig.parse_xlstm_config_dict(xlstm_config_dict)
         xlstm_config = DistilxLSTMConfig(xlstm_cfg=xlstm_config_dict)
         model = DistilxLSTM(config=xlstm_config)
-        model = model.to(teacher_lm.device)
 
         if return_xlstm_config:
             return model, xlstm_config
@@ -105,6 +104,8 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_path=xlstm_config_path,
             return_xlstm_config=True,
         )
+
+        model = model.to(teacher_lm.device)
 
         # loading state dicts for embedding and lm_head
         model.token_embedding.load_state_dict(

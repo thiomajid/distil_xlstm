@@ -1,8 +1,8 @@
 vocab_size: 32_000
 context_length: 1024
-num_blocks: 2
+num_blocks: 1
 embedding_dim: 256
-slstm_at: [0]
+slstm_at: []
 
 mlstm_block:
   mlstm:
