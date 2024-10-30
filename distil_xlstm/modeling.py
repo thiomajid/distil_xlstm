@@ -111,7 +111,7 @@ class DistilxLSTM(PreTrainedModel):
             teacher_lm.model.embed_tokens.state_dict()
         )
 
-        model.lm_head.load_state_dict(teacher_lm.model.lm_head.state_dict())
+        model.lm_head.load_state_dict(teacher_lm.lm_head.state_dict())
 
         if config.xlstm_cfg.tie_weights:
             model.lm_head.weight = model.token_embedding.weight
