@@ -72,10 +72,11 @@ class DistilxLSTM(PreTrainedModel):
 
     @staticmethod
     def init_for_distillation(
-        teacher_lm: AutoModelForCausalLM,
         *,
+        teacher_lm: AutoModelForCausalLM,
         xlstm_config_path: str,
-    ) -> "DistilxLSTM":
+        return_xlstm_config: bool = False,
+    ):
         teacher_config = teacher_lm.config
 
         with open(xlstm_config_path, "r") as file:
@@ -83,7 +84,39 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
             xlstm_config_dict["embedding_dim"] = teacher_config.hidden_size
 
-        xlstm_cfg = DistilxLSTMConfig.parse_xlstm_config_dict(xlstm_config_dict)
-        cfg = DistilxLSTMConfig(xlstm_cfg=xlstm_cfg)
-        model = DistilxLSTM(config=cfg)
-        
+        xlstm_config_dict = DistilxLSTMConfig.parse_xlstm_config_dict(xlstm_config_dict)
+        xlstm_config = DistilxLSTMConfig(xlstm_cfg=xlstm_config_dict)
+        model = DistilxLSTM(config=xlstm_config)
+        model = model.to(teacher_lm.device)
+
+        if return_xlstm_config:
+            return model, xlstm_config
+
+        return model
+
+    @staticmethod
+    def init_for_distillation_with_freezed_head_and_embedding(
+        *,
+        teacher_lm: AutoModelForCausalLM,
+        xlstm_config_path: str,
+    ) -> "DistilxLSTM":
+        model, config = DistilxLSTM.init_for_distillation(
+            teacher_lm=teacher_lm,
+            xlstm_config_path=xlstm_config_path,
+            return_xlstm_config=True,
+        )
+
+        # loading state dicts for embedding and lm_head
+        model.token_embedding.load_state_dict(
+            teacher_lm.model.embed_tokens.state_dict()
+        )
+
+        model.lm_head.load_state_dict(teacher_lm.model.lm_head.state_dict())
+
+        if config.xlstm_cfg.tie_weights:
+            model.lm_head.weight = model.token_embedding.weight
+
+        model.token_embedding.requires_grad_(False)
+        model.lm_head.requires_grad_(False)
+
+        return model
