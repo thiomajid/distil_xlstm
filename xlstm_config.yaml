@@ -1,5 +1,5 @@
 vocab_size: 32_000
-context_length: 1024
+context_length: 512
 num_blocks: 1
 embedding_dim: 256
 slstm_at: []
@@ -7,7 +7,7 @@ slstm_at: []
 mlstm_block:
   mlstm:
     conv1d_kernel_size: 4
-    qkv_proj_blocksize: 16
+    qkv_proj_blocksize: 4
     num_heads: 4
 
 slstm_block:
