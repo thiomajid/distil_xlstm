@@ -38,7 +38,7 @@ class DistilxLSTM(PreTrainedModel):
         self.lm_head = nn.Linear(
             in_features=config.xlstm_cfg.embedding_dim,
             out_features=config.xlstm_cfg.vocab_size,
-            bias=False,
+            bias=True,
         )
 
         if config.xlstm_cfg.tie_weights:
