@@ -2,8 +2,9 @@ from typing import Optional
 
 import torch
 import torch.nn.functional as F
+import yaml
 from torch import nn
-from transformers import PreTrainedModel
+from transformers import AutoModelForCausalLM, PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutput
 from xlstm import xLSTMBlockStack
 
@@ -68,3 +69,21 @@ class DistilxLSTM(PreTrainedModel):
 
         output = CausalLMOutput(logits=logits, loss=loss)
         return output
+
+    @staticmethod
+    def init_for_distillation(
+        teacher_lm: AutoModelForCausalLM,
+        *,
+        xlstm_config_path: str,
+    ) -> "DistilxLSTM":
+        teacher_config = teacher_lm.config
+
+        with open(xlstm_config_path, "r") as file:
+            xlstm_config_dict = yaml.safe_load(file)
+            xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
+            xlstm_config_dict["embedding_dim"] = teacher_config.hidden_size
+
+        xlstm_cfg = DistilxLSTMConfig.parse_xlstm_config_dict(xlstm_config_dict)
+        cfg = DistilxLSTMConfig(xlstm_cfg=xlstm_cfg)
+        model = DistilxLSTM(config=cfg)
+        
