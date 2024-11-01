@@ -59,15 +59,20 @@ class DistilxLSTM(PreTrainedModel):
             attention_mask = attention_mask.unsqueeze(-1)
             input_ids = input_ids * attention_mask
 
-        input_ids = self.embedding_dropout(input_ids)
-        input_ids = self.xlstm_block_stack(input_ids)
-        logits = self.lm_head(input_ids)
+        hidden_state = self.embedding_dropout(input_ids)
+        hidden_state = self.xlstm_block_stack(input_ids)
+        logits = self.lm_head(hidden_state)
 
         loss = None
         if labels is not None:
             loss = F.cross_entropy(logits, labels)
 
-        output = CausalLMOutput(logits=logits, loss=loss)
+        output = CausalLMOutput(
+            logits=logits,
+            loss=loss,
+            hidden_states=hidden_state,
+        )
+
         return output
 
     @staticmethod

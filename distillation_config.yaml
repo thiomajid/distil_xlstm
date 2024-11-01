@@ -36,6 +36,8 @@ report_to: "tensorboard"
 logging_steps: 50
 save_steps: 250
 hub_private_repo: true
+save_total_limit: 4
+load_best_model_at_end: true
 
 fp16: false
 use_cpu: false
