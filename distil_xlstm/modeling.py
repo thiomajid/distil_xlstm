@@ -71,6 +71,7 @@ class DistilxLSTM(PreTrainedModel):
             logits=logits,
             loss=loss,
             hidden_states=hidden_state,
+            attentions=None,
         )
 
         return output
