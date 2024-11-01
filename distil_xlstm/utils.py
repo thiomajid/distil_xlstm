@@ -10,10 +10,10 @@ def count_parameters(model: nn.Module):
     }
 
 
-def count_trainable_parameters(model: nn.Module):
+def count_trainable_parameters(model: nn.Module, precision: int = 2):
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     return {
-        "trainable_params": trainable_params,
-        "in_billions": trainable_params / 1e9,
-        "in_millions": trainable_params / 1e6,
+        "trainable_params": round(trainable_params, precision),
+        "in_millions": round(trainable_params / 1e6, precision),
+        "in_billions": round(trainable_params / 1e9, precision),
     }
