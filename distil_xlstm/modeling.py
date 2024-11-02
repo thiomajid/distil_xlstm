@@ -28,7 +28,6 @@ class DistilxLSTM(PreTrainedModel):
         self.token_embedding = nn.Embedding(
             num_embeddings=config.xlstm_cfg.vocab_size,
             embedding_dim=config.xlstm_cfg.embedding_dim,
-            padding_idx=config.pad_token_id,
         )
 
         self.embedding_dropout = (
