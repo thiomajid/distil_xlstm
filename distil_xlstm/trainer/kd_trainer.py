@@ -1,7 +1,8 @@
+from functools import partial
+
 import torch
 import torch.nn.functional as F
 from einops import rearrange
-from torch import nn
 from transformers import AutoModelForCausalLM, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -28,8 +29,7 @@ class KDTrainer(Trainer):
         self.teacher.eval()
         self.student = student_model
 
-        self.ce_loss_fn = nn.CrossEntropyLoss()
-        self.kl_loss_fn = nn.KLDivLoss(reduction="batchmean")
+        self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
 
     @torch.no_grad
     def _teacher_forward(self, inputs) -> CausalLMOutputWithPast:
@@ -62,22 +62,18 @@ class KDTrainer(Trainer):
         teacher_output: CausalLMOutputWithPast = self._teacher_forward(inputs)
         teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
 
-        # Reshape labels to match the logits shape
-        labels: torch.Tensor = inputs["labels"]
-        labels = rearrange(labels, "b s -> (b s)")
-
         # Compute the cross-entropy loss
-        ce_loss = self.ce_loss_fn(student_logits, labels)
+        ce_loss = student_output.loss
         student_probs = F.log_softmax(student_logits / self.args.temperature, dim=-1)
         teacher_probs = F.softmax(teacher_logits / self.args.temperature, dim=-1)
 
         # Compute KL divergence loss
-        kd_loss = self.kl_loss_fn(student_probs, teacher_probs) * (
+        kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs) * (
             self.args.temperature**2
         )
 
         total_loss: torch.Tensor = (
-            self.args.ce_weight * ce_loss + self.args.kl_weight * kd_loss
+            self.args.ce_weight * ce_loss + self.args.kl_weight * kl_loss
         )
 
         return (total_loss, student_output) if return_outputs else total_loss

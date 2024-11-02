@@ -45,7 +45,7 @@ def get_dataset(
         tokenize_text,
         batched=True,
         remove_columns=raw_data.column_names,
-        desc="Tokenizing the dataset",
+        desc=f"Tokenizing the {split} data",
     )
 
     return tokenized_data
