@@ -8,7 +8,11 @@ from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
 def get_dataset(
-    args: KDArguments, *, max_seq_length: int, tokenizer: AutoTokenizer, split: str
+    args: KDArguments,
+    *,
+    max_seq_length: int,
+    tokenizer: AutoTokenizer,
+    split: str,
 ):
     raw_data: Optional[HfDataset] = None
 

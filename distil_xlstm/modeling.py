@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import yaml
 from torch import nn
 from transformers import AutoModelForCausalLM, PreTrainedModel
-from transformers.modeling_outputs import CausalLMOutput
+from transformers.modeling_outputs import CausalLMOutputWithPast
 from xlstm import xLSTMBlockStack
 
 from distil_xlstm.config import DistilxLSTMConfig
@@ -53,7 +53,7 @@ class DistilxLSTM(PreTrainedModel):
         token_type_ids: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.Tensor] = None,
         **kwargs,
-    ):
+    ) -> CausalLMOutputWithPast:
         input_ids = self.token_embedding(input_ids)
 
         if attention_mask is not None:
@@ -68,7 +68,7 @@ class DistilxLSTM(PreTrainedModel):
         if labels is not None:
             loss = F.cross_entropy(logits, labels)
 
-        output = CausalLMOutput(
+        output = CausalLMOutputWithPast(
             logits=logits,
             loss=loss,
             hidden_states=hidden_state,

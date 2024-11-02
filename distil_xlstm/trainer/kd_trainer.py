@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from einops import rearrange
 from torch import nn
 from transformers import AutoModelForCausalLM, Trainer
-from transformers.modeling_outputs import CausalLMOutput
+from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from distil_xlstm.modeling import DistilxLSTM
 from distil_xlstm.trainer.trainer_arguments import KDArguments
@@ -32,8 +32,8 @@ class KDTrainer(Trainer):
         self.kl_loss_fn = nn.KLDivLoss(reduction="batchmean")
 
     @torch.no_grad
-    def _teacher_forward(self, inputs) -> CausalLMOutput:
-        output = self.teacher(**inputs)
+    def _teacher_forward(self, inputs) -> CausalLMOutputWithPast:
+        output = self.teacher(**inputs, output_hidden_states=True)
         return output
 
     def compute_loss(self, model: DistilxLSTM, inputs, return_outputs=False, **kwargs):
@@ -55,12 +55,12 @@ class KDTrainer(Trainer):
             _description_
         """
 
-        student_output: CausalLMOutput = self.student(inputs["input_ids"])
+        student_output: CausalLMOutputWithPast = self.student(inputs)
 
         student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
 
-        teacher_logits = self._teacher_forward(inputs).logits.detach()
-        teacher_logits = rearrange(teacher_logits, "b s d -> (b s) d")
+        teacher_output: CausalLMOutputWithPast = self._teacher_forward(inputs)
+        teacher_logits = rearrange(teacher_output.logits, "b s d -> (b s) d")
 
         # Reshape labels to match the logits shape
         labels: torch.Tensor = inputs["labels"]
