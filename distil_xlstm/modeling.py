@@ -28,6 +28,7 @@ class DistilxLSTM(PreTrainedModel):
         self.token_embedding = nn.Embedding(
             num_embeddings=config.xlstm_cfg.vocab_size,
             embedding_dim=config.xlstm_cfg.embedding_dim,
+            # padding_idx=config.pad_token_id,
         )
 
         self.embedding_dropout = (
@@ -78,7 +79,7 @@ class DistilxLSTM(PreTrainedModel):
             loss = F.cross_entropy(
                 input=logits,
                 target=labels,
-                ignore_index=self.config.pad_token_id,
+                # ignore_index=self.config.pad_token_id,
             )
 
         # Reshape logits back to [batch_size, seq_len, vocab_size] for output consistency
