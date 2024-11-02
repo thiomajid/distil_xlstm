@@ -13,22 +13,21 @@ def get_dataset(
     max_seq_length: int,
     tokenizer: AutoTokenizer,
     split: str,
+    n_samples: int,
 ):
     raw_data: Optional[HfDataset] = None
-
-    n_samples = range(args.train_samples)
 
     if args.data_subset is not None:
         raw_data = load_dataset(
             args.dataset_url,
             args.data_subset,
             split=split,
-        ).select(n_samples)
+        ).select(range(n_samples))
     else:
         raw_data = load_dataset(
             args.dataset_url,
             split=split,
-        ).select(n_samples)
+        ).select(range(n_samples))
 
     def tokenize_text(element):
         encodings = tokenizer(
