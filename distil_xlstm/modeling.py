@@ -1,3 +1,4 @@
+import copy
 from typing import Optional
 
 import torch
@@ -94,8 +95,11 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
             xlstm_config_dict["embedding_dim"] = teacher_config.hidden_size
 
-        xlstm_config_dict = DistilxLSTMConfig.parse_xlstm_config_dict(xlstm_config_dict)
-        xlstm_config = DistilxLSTMConfig(xlstm_cfg=xlstm_config_dict)
+        parsed_config = DistilxLSTMConfig.parse_xlstm_config_dict(
+            copy.deepcopy(xlstm_config_dict)
+        )
+
+        xlstm_config = DistilxLSTMConfig(xlstm_cfg=parsed_config)
         model = DistilxLSTM(config=xlstm_config)
 
         if return_xlstm_config:

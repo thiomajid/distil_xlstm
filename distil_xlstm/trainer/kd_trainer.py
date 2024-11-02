@@ -60,7 +60,7 @@ class KDTrainer(Trainer):
         student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
 
         teacher_output: CausalLMOutputWithPast = self._teacher_forward(inputs)
-        teacher_logits = rearrange(teacher_output.logits, "b s d -> (b s) d")
+        teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
 
         # Reshape labels to match the logits shape
         labels: torch.Tensor = inputs["labels"]
