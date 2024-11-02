@@ -9,6 +9,7 @@ from transformers.modeling_outputs import CausalLMOutput
 from xlstm import xLSTMBlockStack
 
 from distil_xlstm.config import DistilxLSTMConfig
+from distil_xlstm.utils import count_parameters, count_trainable_parameters
 
 
 class DistilxLSTM(PreTrainedModel):
@@ -79,12 +80,15 @@ class DistilxLSTM(PreTrainedModel):
     @staticmethod
     def init_for_distillation(
         *,
-        teacher_lm: AutoModelForCausalLM,
+        teacher_model: AutoModelForCausalLM,
         xlstm_config_path: str,
         return_xlstm_config: bool = False,
     ):
-        teacher_config = teacher_lm.config
+        # freezing the teacher
+        for param in teacher_model.parameters():
+            param.requires_grad_(False)
 
+        teacher_config = teacher_model.config
         with open(xlstm_config_path, "r") as file:
             xlstm_config_dict = yaml.safe_load(file)
             xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
@@ -102,28 +106,42 @@ class DistilxLSTM(PreTrainedModel):
     @staticmethod
     def init_for_distillation_with_freezed_head_and_embedding(
         *,
-        teacher_lm: AutoModelForCausalLM,
+        teacher_model: AutoModelForCausalLM,
         xlstm_config_path: str,
     ) -> "DistilxLSTM":
         model, config = DistilxLSTM.init_for_distillation(
-            teacher_lm=teacher_lm,
+            teacher_model=teacher_model,
             xlstm_config_path=xlstm_config_path,
             return_xlstm_config=True,
         )
 
-        model = model.to(teacher_lm.device)
-
-        # loading state dicts for embedding and lm_head
+        model = model.to(teacher_model.device)
         model.token_embedding.load_state_dict(
-            teacher_lm.model.embed_tokens.state_dict()
+            teacher_model.model.embed_tokens.state_dict()
         )
-
-        model.lm_head.load_state_dict(teacher_lm.lm_head.state_dict())
+        model.lm_head.load_state_dict(teacher_model.lm_head.state_dict())
 
         if config.xlstm_cfg.tie_weights:
             model.lm_head.weight = model.token_embedding.weight
 
         model.token_embedding.requires_grad_(False)
         model.lm_head.requires_grad_(False)
+
+        print(
+            f"are lm_head weights equal ? {torch.allclose(model.lm_head.weight, teacher_model.lm_head.weight)}"
+        )
+        print(
+            f"are embedding weights equal ? {torch.allclose(model.token_embedding.weight, teacher_model.model.embed_tokens.weight)}"
+        )
+
+        print(f"xLSTM lm_head requires grad ? {model.lm_head.weight.requires_grad}")
+        print(
+            f"xLSTM embedding requires grad ? {model.token_embedding.weight.requires_grad}"
+        )
+
+        print(f"Model number of parameters: \n{count_parameters(model)}")
+        print(
+            f"Model number  trainable parameters: \n{count_trainable_parameters(model)}"
+        )
 
         return model
