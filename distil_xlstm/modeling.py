@@ -4,8 +4,9 @@ from typing import Optional
 import torch
 import torch.nn.functional as F
 import yaml
+from einops import rearrange
 from torch import nn
-from transformers import AutoModelForCausalLM, PreTrainedModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from xlstm import xLSTMBlockStack
 
@@ -27,6 +28,7 @@ class DistilxLSTM(PreTrainedModel):
         self.token_embedding = nn.Embedding(
             num_embeddings=config.xlstm_cfg.vocab_size,
             embedding_dim=config.xlstm_cfg.embedding_dim,
+            padding_idx=config.pad_token_id,
         )
 
         self.embedding_dropout = (
@@ -67,7 +69,19 @@ class DistilxLSTM(PreTrainedModel):
 
         loss = None
         if labels is not None:
-            loss = F.cross_entropy(logits, labels)
+            # Reshape logits and labels for cross-entropy loss
+            logits = rearrange(logits, "b s d -> (b s) d")
+            labels = rearrange(labels, "b s -> (b s)")
+
+            # Compute cross-entropy loss
+            loss = F.cross_entropy(
+                input=logits,
+                target=labels,
+                ignore_index=self.config.pad_token_id,
+            )
+
+        # Reshape logits back to [batch_size, seq_len, vocab_size] for output consistency
+        logits = rearrange(logits, "(b s) v -> b s v", b=input_ids.size(0))
 
         output = CausalLMOutputWithPast(
             logits=logits,
@@ -82,6 +96,7 @@ class DistilxLSTM(PreTrainedModel):
     def init_for_distillation(
         *,
         teacher_model: AutoModelForCausalLM,
+        tokenizer: AutoTokenizer,
         xlstm_config_path: str,
         return_xlstm_config: bool = False,
     ):
@@ -100,6 +115,8 @@ class DistilxLSTM(PreTrainedModel):
         )
 
         xlstm_config = DistilxLSTMConfig(xlstm_cfg=parsed_config)
+        xlstm_config.pad_token_id = tokenizer.pad_token_id
+
         model = DistilxLSTM(config=xlstm_config)
 
         if return_xlstm_config:
@@ -111,10 +128,12 @@ class DistilxLSTM(PreTrainedModel):
     def init_for_distillation_with_freezed_head_and_embedding(
         *,
         teacher_model: AutoModelForCausalLM,
+        tokenizer: AutoTokenizer,
         xlstm_config_path: str,
     ) -> "DistilxLSTM":
         model, config = DistilxLSTM.init_for_distillation(
             teacher_model=teacher_model,
+            tokenizer=tokenizer,
             xlstm_config_path=xlstm_config_path,
             return_xlstm_config=True,
         )
