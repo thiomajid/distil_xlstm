@@ -182,7 +182,7 @@ class DistilxLSTM(PreTrainedModel):
     def create_from_safetensors(
         hf_repo: str,
         filename: Path | str,
-        device: str = "cpu",
+        device: str = "cuda",
     ) -> "DistilxLSTM":
         """
         Creates an instance of DistilxLSTM by loading its safetensors checkpoint downloaded from the Hugging Face Hub
