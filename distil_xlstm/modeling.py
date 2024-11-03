@@ -69,7 +69,7 @@ class DistilxLSTM(PreTrainedModel):
 
         loss = None
         if labels is not None:
-            labels = labels.float()
+            labels = labels.to(logits.device)
 
             # shape: [batch, seq, vocab] -> [batch * (seq-1), vocab]
             shift_logits = rearrange(logits[..., :-1, :], "b s v -> (b s) v")
@@ -80,7 +80,7 @@ class DistilxLSTM(PreTrainedModel):
             # Compute cross-entropy loss
             loss = F.cross_entropy(
                 input=shift_logits,
-                target=shift_labels.to(device=shift_logits.device),
+                target=shift_labels,
                 # ignore_index=self.config.pad_token_id,
             )
 
