@@ -179,7 +179,7 @@ class DistilxLSTM(PreTrainedModel):
         return model
 
     @staticmethod
-    def load_from_safetensors(
+    def create_from_safetensors(
         hf_repo: str,
         filename: Path | str,
         device: str = "cpu",
