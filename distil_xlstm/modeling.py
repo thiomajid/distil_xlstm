@@ -65,17 +65,19 @@ class DistilxLSTM(PreTrainedModel):
 
         hidden_state = self.embedding_dropout(input_ids)
         hidden_state = self.xlstm_block_stack(input_ids)
-        logits = self.lm_head(hidden_state)
+        logits: torch.Tensor = self.lm_head(hidden_state)
 
         loss = None
         if labels is not None:
             labels = labels.to(logits.device)
 
             # shape: [batch, seq, vocab] -> [batch * (seq-1), vocab]
-            shift_logits = rearrange(logits[..., :-1, :], "b s v -> (b s) v")
+            shift_logits = rearrange(
+                logits[..., :-1, :].contiguous(), "b s v -> (b s) v"
+            )
 
             # shape: [batch, seq] -> [batch * (seq-1)]
-            shift_labels = rearrange(labels[..., 1:], "b s -> (b s)")
+            shift_labels = rearrange(labels[..., 1:].contiguous(), "b s -> (b s)")
 
             # Compute cross-entropy loss
             loss = F.cross_entropy(
