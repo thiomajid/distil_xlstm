@@ -1,5 +1,5 @@
 # Custom training arguments
-teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
+teacher_name: "HuggingFaceTB/SmolLM2-1.7B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 dataset_url: "roneneldan/TinyStories"
@@ -23,7 +23,7 @@ temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
 num_train_epochs: 2
-gradient_accumulation_steps: 2
+gradient_accumulation_steps: 1
 learning_rate: 0.0001
 # weight_decay: 0.001
 lr_scheduler_type: "cosine"

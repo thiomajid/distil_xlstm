@@ -69,16 +69,18 @@ class DistilxLSTM(PreTrainedModel):
 
         loss = None
         if labels is not None:
-            labels = labels.to(logits.device)
+            labels = labels.to(logits.device, dtype=logits.dtype)
 
-            # Reshape logits and labels for cross-entropy loss
-            logits = rearrange(logits, "b s d -> (b s) d")
-            labels = rearrange(labels, "b s -> (b s)")
+            # shape: [batch, seq, vocab] -> [batch * (seq-1), vocab]
+            shift_logits = rearrange(logits[..., :-1, :], "b s v -> (b s) v")
+
+            # shape: [batch, seq] -> [batch * (seq-1)]
+            shift_labels = rearrange(labels[..., 1:], "b s -> (b s)")
 
             # Compute cross-entropy loss
             loss = F.cross_entropy(
-                input=logits,
-                target=labels,
+                input=shift_logits,
+                target=shift_labels,
                 # ignore_index=self.config.pad_token_id,
             )
 
