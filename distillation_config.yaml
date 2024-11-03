@@ -46,3 +46,4 @@ push_to_hub: true
 resume_from_checkpoint: "distil-xlstm-artifacts"
 hub_model_id: "thiomajid/distil-xlstm"
 gradient_checkpointing: false
+remove_unused_columns: false

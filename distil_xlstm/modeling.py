@@ -67,7 +67,6 @@ class DistilxLSTM(PreTrainedModel):
         hidden_state = self.xlstm_block_stack(input_ids)
         logits = self.lm_head(hidden_state)
 
-        loss = None
         if labels is not None:
             labels = labels.to(logits.device)
 
@@ -82,12 +81,19 @@ class DistilxLSTM(PreTrainedModel):
                 # ignore_index=self.config.pad_token_id,
             )
 
-        # Reshape logits back to [batch_size, seq_len, vocab_size] for output consistency
-        logits = rearrange(logits, "(b s) v -> b s v", b=input_ids.size(0))
+            # Reshape logits back to [batch_size, seq_len, vocab_size] for output consistency
+            logits = rearrange(logits, "(b s) v -> b s v", b=input_ids.size(0))
+
+            return CausalLMOutputWithPast(
+                logits=logits,
+                loss=loss,
+                hidden_states=hidden_state,
+                attentions=None,
+            )
 
         output = CausalLMOutputWithPast(
             logits=logits,
-            loss=loss,
+            loss=None,
             hidden_states=hidden_state,
             attentions=None,
         )
