@@ -1,10 +1,10 @@
 # Custom training arguments
-teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
+teacher_name: "HuggingFaceH4/zephyr-7b-alpha"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 dataset_url: "roneneldan/TinyStories"
-train_samples: 10_000
-eval_samples: 5_000
+train_samples: "all"
+eval_samples: "all"
 
 # CE-loss args
 ce_weight: 0.2
@@ -22,19 +22,19 @@ final_temperature: 1
 temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
-num_train_epochs: 2
+num_train_epochs: 10
 gradient_accumulation_steps: 2
 learning_rate: 0.0001
 # weight_decay: 0.001
 lr_scheduler_type: "cosine"
 torch_compile: false
-per_device_train_batch_size: 4
+per_device_train_batch_size: 16
 
 output_dir: "distil-xlstm-artifacts"
 logging_dir: "distil-xlstm-logs"
 report_to: "tensorboard"
-logging_steps: 50
-save_steps: 250
+logging_steps: 100
+save_steps: 1000
 hub_private_repo: true
 save_total_limit: 4
 load_best_model_at_end: true

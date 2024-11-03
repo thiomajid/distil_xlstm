@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional, Union
 
 from datasets import Dataset as HfDataset
 from datasets import load_dataset
@@ -13,7 +13,7 @@ def get_dataset(
     max_seq_length: int,
     tokenizer: AutoTokenizer,
     split: str,
-    n_samples: int,
+    n_samples: Union[int, Literal["all"]] = "all",
 ):
     raw_data: Optional[HfDataset] = None
 
@@ -22,12 +22,15 @@ def get_dataset(
             args.dataset_url,
             args.data_subset,
             split=split,
-        ).select(range(n_samples))
+        )
     else:
         raw_data = load_dataset(
             args.dataset_url,
             split=split,
-        ).select(range(n_samples))
+        )
+
+    if n_samples != "all":
+        raw_data = raw_data.select(range(n_samples))
 
     def tokenize_text(element):
         encodings = tokenizer(
