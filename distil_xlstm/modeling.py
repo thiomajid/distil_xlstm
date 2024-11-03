@@ -1,12 +1,20 @@
 import copy
+from pathlib import Path
 from typing import Optional
 
+import safetensors
+import safetensors.torch
 import torch
 import torch.nn.functional as F
 import yaml
 from einops import rearrange
 from torch import nn
-from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedModel,
+)
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from xlstm import xLSTMBlockStack
 
@@ -167,5 +175,46 @@ class DistilxLSTM(PreTrainedModel):
         print(
             f"Model number  trainable parameters: \n{count_trainable_parameters(model)}"
         )
+
+        return model
+
+    @staticmethod
+    def load_from_safetensors(
+        hf_repo: str,
+        filename: Path | str,
+        device: str = "cpu",
+    ) -> "DistilxLSTM":
+        """
+        Creates an instance of DistilxLSTM by loading its safetensors checkpoint downloaded from the Hugging Face Hub
+        and using its configuration to initialize the model.
+
+
+        Parameters
+        ----------
+        hf_repo : str
+            Hugging Face repository where the model weights are stored as well as the configuration to be used.
+        filename : Path | str
+            Path to the safetensors checkpoint file.
+        device : str, optional
+            The device on which the model will be loaded, by default "cpu"
+
+        Returns
+        -------
+        DistilxLSTM
+
+        Raises
+        ------
+        FileNotFoundError
+            If the file does not exist on the disk.
+        """
+        if isinstance(filename, str):
+            filename = Path(filename)
+
+        if not filename.exists():
+            raise FileNotFoundError(f"{filename} does not exist on the disk.")
+
+        config = AutoConfig.from_pretrained(hf_repo)
+        model = DistilxLSTM(config=config)
+        safetensors.torch.load_model(model=model, filename=filename, device=device)
 
         return model
