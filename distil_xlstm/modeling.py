@@ -10,7 +10,6 @@ import yaml
 from einops import rearrange
 from torch import nn
 from transformers import (
-    AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     PreTrainedModel,
@@ -213,7 +212,7 @@ class DistilxLSTM(PreTrainedModel):
         if not filename.exists():
             raise FileNotFoundError(f"{filename} does not exist on the disk.")
 
-        config = AutoConfig.from_pretrained(hf_repo)
+        config = DistilxLSTMConfig.from_pretrained(hf_repo)
         model = DistilxLSTM(config=config)
         safetensors.torch.load_model(model=model, filename=filename, device=device)
 
