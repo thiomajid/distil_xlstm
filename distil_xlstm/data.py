@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional, Union
 
 from datasets import Dataset as HfDataset
 from datasets import load_dataset
@@ -8,23 +8,29 @@ from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
 def get_dataset(
-    args: KDArguments, *, max_seq_length: int, tokenizer: AutoTokenizer, split: str
+    args: KDArguments,
+    *,
+    max_seq_length: int,
+    tokenizer: AutoTokenizer,
+    split: str,
+    n_samples: Union[int, Literal["all"]] = "all",
 ):
     raw_data: Optional[HfDataset] = None
-
-    n_samples = range(args.train_samples)
 
     if args.data_subset is not None:
         raw_data = load_dataset(
             args.dataset_url,
             args.data_subset,
             split=split,
-        ).select(n_samples)
+        )
     else:
         raw_data = load_dataset(
             args.dataset_url,
             split=split,
-        ).select(n_samples)
+        )
+
+    if n_samples != "all":
+        raw_data = raw_data.select(range(n_samples))
 
     def tokenize_text(element):
         encodings = tokenizer(
@@ -42,7 +48,7 @@ def get_dataset(
         tokenize_text,
         batched=True,
         remove_columns=raw_data.column_names,
-        desc="Tokenizing the dataset",
+        desc=f"Tokenizing the {split} data",
     )
 
     return tokenized_data

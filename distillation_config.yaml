@@ -1,18 +1,18 @@
 # Custom training arguments
-teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
+teacher_name: "HuggingFaceH4/zephyr-7b-alpha"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
-dataset_url: "Salesforce/wikitext"
-data_subset: "wikitext-103-v1"
-train_samples: 10_000
+dataset_url: "roneneldan/TinyStories"
+train_samples: "all"
+eval_samples: "all"
 
 # CE-loss args
-ce_weight: 0.8
+ce_weight: 0.2
 final_ce_weight: 1
 ce_schedule: "no-op"
 
 # KL-loss args
-kl_weight: 1
+kl_weight: 0.8
 final_kl_weight: 1
 kl_schedule: "increase"
 
@@ -22,8 +22,8 @@ final_temperature: 1
 temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
-num_train_epochs: 1
-gradient_accumulation_steps: 1
+num_train_epochs: 10
+gradient_accumulation_steps: 2
 learning_rate: 0.0001
 # weight_decay: 0.001
 lr_scheduler_type: "cosine"
@@ -33,9 +33,12 @@ per_device_train_batch_size: 8
 output_dir: "distil-xlstm-artifacts"
 logging_dir: "distil-xlstm-logs"
 report_to: "tensorboard"
-logging_steps: 50
-save_steps: 250
-hub_private_repo: true
+logging_steps: 100
+save_steps: 1000
+hub_private_repo: false
+save_total_limit: 4
+load_best_model_at_end: true
+eval_strategy: "steps"
 
 fp16: false
 use_cpu: false
@@ -43,3 +46,4 @@ push_to_hub: true
 resume_from_checkpoint: "distil-xlstm-artifacts"
 hub_model_id: "thiomajid/distil-xlstm"
 gradient_checkpointing: false
+remove_unused_columns: false

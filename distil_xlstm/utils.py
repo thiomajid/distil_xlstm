@@ -17,3 +17,15 @@ def count_trainable_parameters(model: nn.Module, precision: int = 2):
         "in_millions": round(trainable_params / 1e6, precision),
         "in_billions": round(trainable_params / 1e9, precision),
     }
+
+
+def download_safetensors(url: str, out_file: str):
+    import requests
+    from tqdm import tqdm
+
+    response = requests.get(url, stream=True)
+    with open(out_file, "wb") as handle:
+        for data in tqdm(response.iter_content()):
+            handle.write(data)
+
+    return out_file

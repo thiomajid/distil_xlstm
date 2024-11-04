@@ -10,11 +10,12 @@ from ..optim.scheduler import ParamScheduleType
 class KDArguments(TrainingArguments):
     xlstm_config_path: str = field(default="./xlstm_config.yaml")
 
-    dataset_url: str = field(default="Salesforce/wikitext")
+    dataset_url: str = field(default="roneneldan/TinyStories")
 
     data_subset: Optional[str] = field(default=None)
 
-    train_samples: int = field(default=5000)
+    train_samples: int = field(default=10_000)
+    eval_samples: int = field(default=5_000)
 
     teacher_name: str = field(
         default="Qwen/Qwen2.5-1.5B-Instruct",
