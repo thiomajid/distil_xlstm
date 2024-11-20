@@ -6,39 +6,45 @@ ScheduleFnVariant = Literal["linear", "exponential", "logarithmic", "cosine"]
 
 
 def create_scalar_scheduler(
-    schedule_type: ParamScheduleType,
+    variation: ParamScheduleType,
     *,
     initial_value: float,
     final_value: float,
     total_steps: int,
-    variant: ScheduleFnVariant,
+    variation_fn: ScheduleFnVariant,
 ):
-    match schedule_type:
+    """
+    Create a scalar scheduler based on the specified variation type.
+    The scalar scheduler can be used to anneal or increment a scalar value based
+    on the current step and schedule type (linear, exponential, logarithmic, cosine).
+    """
+
+    match variation:
         case "increasing":
             return ScalarIncrementScheduler(
                 initial_value=initial_value,
                 final_value=final_value,
-                variant=variant,
                 total_steps=total_steps,
+                variation_fn=variation_fn,
             )
 
         case "decreasing":
             return ScalarAnnealingScheduler(
                 initial_value=initial_value,
                 final_value=final_value,
-                variant=variant,
                 total_steps=total_steps,
+                variation_fn=variation_fn,
             )
         case "no-op":
             return NoOpScalarScheduler(
                 initial_value=initial_value,
                 final_value=final_value,
-                variant=variant,
                 total_steps=total_steps,
+                variation_fn=variation_fn,
             )
 
         case _:
-            raise ValueError(f"{schedule_type} is not a supported scalar scheduler")
+            raise ValueError(f"{variation} is not a supported variation for scalar scheduler")
 
 
 class ScalarScheduler:
@@ -47,28 +53,28 @@ class ScalarScheduler:
         initial_value: float,
         final_value: float,
         total_steps: int,
-        variant: ScheduleFnVariant = "linear",
+        variation_fn: ScheduleFnVariant = "linear",
     ):
         super().__init__()
 
-        assert variant in [
+        assert variation_fn in [
             "linear",
             "exponential",
             "logarithmic",
             "cosine",
-        ], f"{variant} is an invalid scalar schedule type"
+        ], f"{variation_fn} is an invalid scalar schedule type"
 
         self._value = initial_value
         self.final_value = final_value
         self.total_steps = total_steps
-        self.variant: ScheduleFnVariant = variant
+        self.variation_fn: ScheduleFnVariant = variation_fn
         self.current_step = 0
 
     def step(self):
         pass
 
     def get_value(self) -> float:
-        self._value
+        return self._value
 
 
 class NoOpScalarScheduler(ScalarScheduler):
@@ -77,9 +83,9 @@ class NoOpScalarScheduler(ScalarScheduler):
         initial_value,
         final_value,
         total_steps,
-        variant: ScheduleFnVariant = "linear",
+        variation_fn: ScheduleFnVariant = "linear",
     ):
-        super().__init__(initial_value, final_value, total_steps, variant)
+        super().__init__(initial_value, final_value, total_steps, variation_fn)
 
     def step(self):
         self.current_step += 1
@@ -91,9 +97,9 @@ class ScalarAnnealingScheduler(ScalarScheduler):
         initial_value,
         final_value,
         total_steps,
-        schedule_type: ScheduleFnVariant = "linear",
+        variation_fn: ScheduleFnVariant = "linear",
     ):
-        super().__init__(initial_value, final_value, total_steps, schedule_type)
+        super().__init__(initial_value, final_value, total_steps, variation_fn)
 
     def step(self):
         """Update the temperature based on the current step and schedule type."""
@@ -103,7 +109,7 @@ class ScalarAnnealingScheduler(ScalarScheduler):
         # Ensure progress is capped at 1.0
         progress = min(self.current_step / self.total_steps, 1.0)
 
-        match self.variant:
+        match self.variation_fn:
             case "linear":
                 self.current_temperature = self._linear_annealing(progress)
             case "exponential":
