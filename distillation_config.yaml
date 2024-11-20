@@ -1,10 +1,10 @@
 # Custom training arguments
-teacher_name: "HuggingFaceH4/zephyr-7b-alpha"
+teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 dataset_url: "roneneldan/TinyStories"
-train_samples: "all"
-eval_samples: "all"
+train_samples: 5000
+eval_samples: 5000
 
 # CE-loss args
 ce_weight: 0.2
