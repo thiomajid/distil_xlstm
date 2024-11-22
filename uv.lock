@@ -317,7 +317,6 @@ dependencies = [
     { name = "datasets" },
     { name = "einops" },
     { name = "evaluate" },
-    { name = "tensorboard" },
     { name = "torch" },
     { name = "transformers" },
     { name = "trl" },
@@ -327,6 +326,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "ipykernel" },
+    { name = "tensorboard" },
 ]
 
 [package.metadata]
@@ -336,7 +336,6 @@ requires-dist = [
     { name = "datasets", specifier = ">=3.0.1" },
     { name = "einops", specifier = ">=0.8.0" },
     { name = "evaluate", specifier = ">=0.4.3" },
-    { name = "tensorboard", specifier = ">=2.18.0" },
     { name = "torch", specifier = ">=2.4.1" },
     { name = "transformers", specifier = ">=4.45.2" },
     { name = "trl", specifier = ">=0.11.4" },
@@ -344,7 +343,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "ipykernel", specifier = ">=6.29.5" }]
+dev = [
+    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "tensorboard", specifier = ">=2.18.0" },
+]
 
 [[package]]
 name = "docstring-parser"
