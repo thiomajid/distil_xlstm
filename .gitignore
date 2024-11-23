@@ -11,4 +11,5 @@ wheels/
 
 
 # Custom files
-**ipynb
+**.ipynb
+**.bib
