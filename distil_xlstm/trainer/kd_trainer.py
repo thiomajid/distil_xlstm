@@ -3,7 +3,7 @@ from functools import partial
 import torch
 import torch.nn.functional as F
 from einops import rearrange
-from transformers import AutoModelForCausalLM, Trainer, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from distil_xlstm.modeling import DistilxLSTM
@@ -16,7 +16,7 @@ class KDTrainer(Trainer):
         teacher_model: AutoModelForCausalLM,
         student_model: DistilxLSTM,
         args: KDArguments,
-        tokenizer:AutoTokenizer,
+        tokenizer: AutoTokenizer,
         **kwargs,
     ) -> None:
         super().__init__(

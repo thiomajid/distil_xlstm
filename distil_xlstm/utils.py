@@ -1,3 +1,5 @@
+import subprocess
+
 from torch import nn
 
 
@@ -19,13 +21,44 @@ def count_trainable_parameters(model: nn.Module, precision: int = 2):
     }
 
 
-def download_safetensors(url: str, out_file: str):
-    import requests
-    from tqdm import tqdm
+def download_safetensors(url: str, out_file: str = "./model.safetensors") -> bool:
+    """
+    Downloads a file from the specified URL and saves it to the given output file path using the curl command.
 
-    response = requests.get(url, stream=True)
-    with open(out_file, "wb") as handle:
-        for data in tqdm(response.iter_content()):
-            handle.write(data)
 
-    return out_file
+    Args:
+    ---
+        url (str): The URL of the file to download.
+        out_file (str, optional): The path where the downloaded file will be saved. Defaults to "./model.safetensors".
+
+    Returns:
+    ---
+        bool: True if the download was successful, False otherwise.
+
+    Raises:
+    ---
+        subprocess.CalledProcessError: If the curl command fails.
+        FileNotFoundError: If the curl command is not found on the system.
+    """
+
+    try:
+        # Run curl command with progress bar
+        _ = subprocess.run(
+            [
+                "curl",
+                "-L",  # Follow redirects
+                "-o",
+                out_file,  # Output file
+                "--progress-bar",  # Show progress
+                url,
+            ],
+            check=True,
+        )
+
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Download failed: {e}")
+        return False
+    except FileNotFoundError:
+        print("curl command not found")
+        return False
