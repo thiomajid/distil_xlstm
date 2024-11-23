@@ -10,9 +10,9 @@ from ..optim.scheduler import ParamScheduleType
 class KDArguments(TrainingArguments):
     xlstm_config_path: str = field(default="./xlstm_config.yaml")
 
-    dataset_url: str = field(default="roneneldan/TinyStories")
+    dataset_url: str = field(default="allenai/c4")
 
-    data_subset: Optional[str] = field(default=None)
+    data_subset: Optional[str] = field(default="en")
 
     train_samples: int = field(default=10_000)
     eval_samples: int = field(default=5_000)
