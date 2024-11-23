@@ -178,7 +178,7 @@ class DistilxLSTM(PreTrainedModel):
         return model
 
     @staticmethod
-    def create_from_safetensors(
+    def from_safetensors(
         hf_repo: str,
         filename: Path | str,
         device: str = "cuda",
