@@ -1,7 +1,7 @@
 [project]
 name = "distil-xlstm"
 version = "0.1.0"
-description = "Learning to approximate attention using xLSTM"
+description = "Distil-xLSTM: Learning Attention Mechanisms through Recurrent Structures"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
@@ -11,7 +11,6 @@ dependencies = [
     "datasets>=3.0.1",
     "einops>=0.8.0",
     "evaluate>=0.4.3",
-    "tensorboard>=2.18.0",
     "torch>=2.4.1",
     "transformers>=4.45.2",
     "trl>=0.11.4",
@@ -19,4 +18,7 @@ dependencies = [
 ]
 
 [tool.uv]
-dev-dependencies = ["ipykernel>=6.29.5"]
+dev-dependencies = [
+    "ipykernel>=6.29.5",
+    "tensorboard>=2.18.0",
+]

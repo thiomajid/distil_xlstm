@@ -1,10 +1,10 @@
 # Custom training arguments
-teacher_name: "HuggingFaceH4/zephyr-7b-alpha"
+teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 dataset_url: "roneneldan/TinyStories"
-train_samples: "all"
-eval_samples: "all"
+train_samples: 50000
+eval_samples: 10000
 
 # CE-loss args
 ce_weight: 0.2
@@ -22,28 +22,29 @@ final_temperature: 1
 temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
-num_train_epochs: 10
+num_train_epochs: 1
 gradient_accumulation_steps: 2
 learning_rate: 0.0001
 # weight_decay: 0.001
 lr_scheduler_type: "cosine"
 torch_compile: false
-per_device_train_batch_size: 8
+per_device_train_batch_size: 4
+per_device_eval_batch_size: 4
 
-output_dir: "distil-xlstm-artifacts"
-logging_dir: "distil-xlstm-logs"
+output_dir: "artifacts"
+logging_dir: "logs"
 report_to: "tensorboard"
 logging_steps: 100
-save_steps: 1000
+save_steps: 100
 hub_private_repo: false
-save_total_limit: 4
+save_total_limit: 2
 load_best_model_at_end: true
 eval_strategy: "steps"
 
-fp16: false
+fp16: true
 use_cpu: false
 push_to_hub: true
-resume_from_checkpoint: "distil-xlstm-artifacts"
+resume_from_checkpoint: "artifacts"
 hub_model_id: "thiomajid/distil-xlstm"
 gradient_checkpointing: false
 remove_unused_columns: false
