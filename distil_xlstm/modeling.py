@@ -217,3 +217,7 @@ class DistilxLSTM(PreTrainedModel):
         safetensors.torch.load_model(model=model, filename=filename, device=device)
 
         return model
+
+    @torch.no_grad
+    def generate(enconding: BatchEncoding, max_new_tokens: int):
+        pass
