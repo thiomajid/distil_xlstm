@@ -218,6 +218,6 @@ class DistilxLSTM(PreTrainedModel):
 
         return model
 
-    @torch.no_grad
-    def generate(enconding: BatchEncoding, max_new_tokens: int):
-        pass
+    # @torch.no_grad
+    # def generate(enconding: BatchEncoding, max_new_tokens: int):
+    #     pass
