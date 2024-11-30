@@ -216,6 +216,8 @@ class DistilxLSTM(PreTrainedModel):
         model = DistilxLSTM(config=config)
         safetensors.torch.load_model(model=model, filename=filename, device=device)
 
+        model = model.to(device)
+
         return model
 
     # @torch.no_grad
