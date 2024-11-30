@@ -244,7 +244,6 @@ class DistilxLSTM(PreTrainedModel):
             - 'greedy': Always choose the most probable token
             - 'top_k': Sample from top k most probable tokens
             - 'top_p': Sample from tokens with cumulative probability <= top_p
-            - 'temperature': Apply temperature scaling to logits before sampling
         temperature : float, optional
             Temperature for softmax scaling. Lower values make sampling more deterministic
         top_k : int, optional
