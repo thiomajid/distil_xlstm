@@ -220,101 +220,35 @@ class DistilxLSTM(PreTrainedModel):
 
         return model
 
-    @torch.no_grad()
+    @torch.no_grad
     def generate(
-        self,
-        encoding,
-        max_new_tokens: int = 50,
-        strategy: str = "greedy",
-        temperature: float = 1.0,
-        top_k: int = 50,
-        top_p: float = 1.0,
-    ):
+        self, encodings, max_new_tokens: int = 50, temperature: float = 1.0
+    ) -> torch.Tensor:
         """
-        Generate text using different sampling strategies.
+        Generate new tokens from the model given a prompt.
 
-        Parameters:
-        -----------
-        encoding : dict
-            Tokenizer encoding of the input prompt
-        max_new_tokens : int
-            Maximum number of tokens to generate
-        strategy : str, optional
-            Generation strategy. Options:
-            - 'greedy': Always choose the most probable token
-            - 'top_k': Sample from top k most probable tokens
-            - 'top_p': Sample from tokens with cumulative probability <= top_p
+        Parameters
+        ----------
+        encodings : torch.Tensor
+            Encodings of the prompt.
+        max_new_tokens : int, optional
+            Maximum number of tokens to generate, by default 50
         temperature : float, optional
-            Temperature for softmax scaling. Lower values make sampling more deterministic
-        top_k : int, optional
-            Number of top tokens to consider for top-k sampling
-        top_p : float, optional
-            Cumulative probability threshold for top-p (nucleus) sampling
+            Temperature to use during sampling, by default 1.0
 
-        Returns:
-        --------
-        list
-            Generated token ids
+        Returns
+        -------
+        torch.Tensor
+            Generated tokens.
         """
-        predictions = []
-        input_ids = encoding["input_ids"]
 
-        def top_k_top_p_filtering(logits, top_k=0, top_p=1.0):
-            """Filter logits based on top-k and top-p strategies."""
-            # Top-k filtering
-            if top_k > 0:
-                # Remove tokens with low probability
-                values, _ = torch.topk(logits, top_k)
-                min_values = values[:, -1].unsqueeze(1).repeat(1, logits.shape[-1])
-                logits = torch.where(logits < min_values, float("-inf"), logits)
-
-            # Top-p (nucleus) filtering
-            if top_p < 1.0:
-                # Sort and compute cumulative probabilities
-                sorted_logits, sorted_indices = torch.sort(logits, descending=True)
-                cumulative_probs = torch.cumsum(
-                    F.softmax(sorted_logits, dim=-1), dim=-1
-                )
-
-                # Remove tokens with cumulative probability above top_p
-                sorted_indices_to_remove = cumulative_probs > top_p
-                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[
-                    ..., :-1
-                ].clone()
-                sorted_indices_to_remove[..., 0] = 0
-
-                # Scatter the indices back to their original positions
-                indices_to_remove = sorted_indices[sorted_indices_to_remove]
-                logits[indices_to_remove] = float("-inf")
-
-            return logits
-
+        self.eval()
+        input_ids = encodings["input_ids"]
         for _ in range(max_new_tokens):
-            # Get logits for the current input
-            logits = self(input_ids=input_ids, **encoding).logits
+            output = self.forward(input_ids=input_ids, **encodings)
+            logits = output.logits[:, -1, :]
+            probs = F.softmax(logits / temperature, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+            input_ids = torch.cat([input_ids, next_token], dim=-1)
 
-            # Extract logits for the last token
-            last_token_logits = logits[:, -1, :]
-
-            # Apply temperature scaling
-            last_token_logits = last_token_logits / temperature
-
-            # Apply sampling strategy
-            if strategy == "greedy":
-                # Always choose the most probable token
-                predicted_token = torch.argmax(last_token_logits, dim=-1)
-            else:
-                # Apply top-k and top-p filtering
-                filtered_logits = top_k_top_p_filtering(
-                    last_token_logits.unsqueeze(0), top_k=top_k, top_p=top_p
-                ).squeeze(0)
-
-                # Sample from the filtered distribution
-                probs = F.softmax(filtered_logits, dim=-1)
-                predicted_token = torch.multinomial(probs, num_samples=1)
-
-            # Store and append the predicted token
-            predictions.append(predicted_token.item())
-            input_ids = torch.cat([input_ids, predicted_token.unsqueeze(0)], dim=-1)
-
-        return predictions
+        return encodings
