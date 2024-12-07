@@ -17,6 +17,9 @@ def get_dataset(
 ):
     raw_data: Optional[HfDataset] = None
 
+    if n_samples != "all":
+        split = f"{split}[:{n_samples}]"
+
     if args.data_subset is not None:
         raw_data = load_dataset(
             args.dataset_url,
@@ -28,9 +31,6 @@ def get_dataset(
             args.dataset_url,
             split=split,
         )
-
-    if n_samples != "all":
-        raw_data = raw_data.select(range(n_samples))
 
     def tokenize_text(element):
         encodings = tokenizer(
