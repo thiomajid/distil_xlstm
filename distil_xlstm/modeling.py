@@ -21,7 +21,7 @@ from xlstm import xLSTMBlockStack
 from distil_xlstm.config import DistilxLSTMConfig
 from distil_xlstm.utils import count_parameters, count_trainable_parameters
 
-type DecodingStrategy = Literal["greedy", "sampling", "top_k", "top_p", "beam_search"]
+DecodingStrategy = Literal["greedy", "sampling", "top_k", "top_p", "beam_search"]
 
 
 class DistilxLSTM(PreTrainedModel):
