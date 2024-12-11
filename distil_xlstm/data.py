@@ -34,7 +34,7 @@ def get_dataset(
 
     def tokenize_text(element):
         encodings = tokenizer(
-            element["text"],
+            element[args.features[0]],
             truncation=True,
             max_length=max_seq_length,
             padding="max_length",

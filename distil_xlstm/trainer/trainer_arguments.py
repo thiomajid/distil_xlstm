@@ -24,6 +24,13 @@ class KDArguments(TrainingArguments):
 
     quantize_teacher: bool = field(default=True)
 
+    features: list[str] = field(
+        default=["text"],
+        metadata={
+            "help": "Columns from the dataset that will be used to create input data for the model"
+        },
+    )
+
     ce_weight: float = field(
         default=1,
         metadata={"help": "Ratio of CE loss"},
