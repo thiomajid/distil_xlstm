@@ -18,9 +18,6 @@ def get_dataset(
 ):
     data_stream: Optional[IterableDataset] = None
 
-    if n_samples != "all":
-        split = f"{split}[:{n_samples}]"
-
     if args.data_subset is not None:
         data_stream = load_dataset(
             args.dataset_url,
@@ -54,11 +51,11 @@ def get_dataset(
 
         return encodings
 
-    code_data = HfDataset.from_list(data_points)
-    tokenized_data = code_data.map(
+    raw_data = HfDataset.from_list(data_points)
+    tokenized_data = raw_data.map(
         tokenize_text,
         batched=True,
-        remove_columns=code_data.column_names,
+        remove_columns=raw_data.column_names,
         desc=f"Tokenizing the {split} data",
     )
 
