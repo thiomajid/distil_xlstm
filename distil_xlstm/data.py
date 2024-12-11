@@ -1,7 +1,8 @@
 from typing import Literal, Optional, Union
 
 from datasets import Dataset as HfDataset
-from datasets import load_dataset
+from datasets import IterableDataset, load_dataset
+from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from distil_xlstm.trainer.trainer_arguments import KDArguments
@@ -15,22 +16,31 @@ def get_dataset(
     split: str,
     n_samples: Union[int, Literal["all"]] = "all",
 ):
-    raw_data: Optional[HfDataset] = None
+    data_stream: Optional[IterableDataset] = None
 
     if n_samples != "all":
         split = f"{split}[:{n_samples}]"
 
     if args.data_subset is not None:
-        raw_data = load_dataset(
+        data_stream = load_dataset(
             args.dataset_url,
             args.data_subset,
             split=split,
+            streaming=True,
         )
     else:
-        raw_data = load_dataset(
+        data_stream = load_dataset(
             args.dataset_url,
             split=split,
+            streaming=True,
         )
+
+    data_points = []
+
+    for data_point in tqdm(data_stream, desc=f"Loading the {split} data"):
+        data_points.append(data_point)
+        if n_samples != "all" and len(data_points) >= n_samples:
+            break
 
     def tokenize_text(element):
         encodings = tokenizer(
@@ -44,11 +54,12 @@ def get_dataset(
 
         return encodings
 
-    tokenized_data = raw_data.map(
+    code_data = HfDataset.from_list(data_points)
+    tokenized_data = code_data.map(
         tokenize_text,
         batched=True,
-        remove_columns=raw_data.column_names,
+        remove_columns=code_data.column_names,
         desc=f"Tokenizing the {split} data",
     )
 
-    return tokenized_data
+    return code_data
