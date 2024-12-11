@@ -267,7 +267,7 @@ class DistilxLSTM(PreTrainedModel):
                 raise ValueError(f"Invalid decoding strategy: {strategy}")
 
     def _greedy_decode(self, encodings, max_new_tokens: int):
-        input_ids: torch.Tensor = encodings["input_ids"].clone()
+        input_ids: torch.Tensor = encodings["input_ids"].pop().clone()
 
         for _ in tqdm(range(max_new_tokens)):
             logits = self(input_ids=input_ids, **encodings).logits
