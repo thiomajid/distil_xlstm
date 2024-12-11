@@ -269,10 +269,12 @@ class DistilxLSTM(PreTrainedModel):
     def _greedy_decode(self, encodings, max_new_tokens: int):
         input_ids: torch.Tensor = encodings["input_ids"].clone()
 
-        for _ in range(tqdm(max_new_tokens)):
+        for _ in tqdm(range(max_new_tokens)):
             logits = self(input_ids=input_ids, **encodings).logits
-            probs = F.softmax(logits[:, -1, :], dim=-1)
-            next_token = torch.argmax(probs[:, -1, :])
+            next_token_probs = F.softmax(logits[:, -1, :], dim=-1)
+
+            # [batch size, 1, dim] => [batch size, 1]
+            next_token = torch.argmax(next_token_probs, dim=-1, keepdim=True)
             input_ids = torch.cat([input_ids, next_token], dim=-1)
 
         return input_ids
@@ -286,11 +288,11 @@ class DistilxLSTM(PreTrainedModel):
     ):
         input_ids: torch.Tensor = encodings["input_ids"].clone()
 
-        for _ in range(tqdm(max_new_tokens)):
+        for _ in tqdm(range(max_new_tokens)):
             scaled_logits = self(input_ids=input_ids, **encodings).logits / temperature
             probs = F.softmax(scaled_logits[:, -1, :], dim=-1)
             next_token = torch.multinomial(
-                probs[:, -1, :],
+                probs,
                 num_samples=1,
                 replacement=replacement,
             )
@@ -308,7 +310,7 @@ class DistilxLSTM(PreTrainedModel):
     ):
         input_ids: torch.Tensor = encodings["input_ids"].clone()
 
-        for idx in range(tqdm(max_new_tokens)):
+        for idx in tqdm(range(max_new_tokens)):
             student_logits = self(input_ids=input_ids, **encodings).logits
             # Scale logits by temperature
             scaled_logits = student_logits[:, -1, :] / temperature
@@ -337,7 +339,7 @@ class DistilxLSTM(PreTrainedModel):
         input_ids: torch.Tensor = encodings["input_ids"].clone()
         batch_size = input_ids.size(0)
 
-        for idx in range(tqdm(max_new_tokens)):
+        for idx in tqdm(range(max_new_tokens)):
             student_logits = self(input_ids=input_ids, **encodings).logits
             # Scale logits by temperature
             scaled_logits = student_logits[:, -1, :] / temperature
