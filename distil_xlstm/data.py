@@ -62,4 +62,4 @@ def get_dataset(
         desc=f"Tokenizing the {split} data",
     )
 
-    return code_data
+    return tokenized_data
