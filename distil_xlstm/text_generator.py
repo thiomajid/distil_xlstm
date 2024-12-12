@@ -20,7 +20,7 @@ class TextGenerator:
     @torch.no_grad
     def generate(
         self,
-        encodings,
+        input_ids: torch.Tensor,
         strategy: DecodingStrategy = "greedy",
         max_new_tokens: int = 50,
         temperature: float = 1.0,
@@ -28,24 +28,24 @@ class TextGenerator:
         top_k: int = 10,
     ):
         self.model.eval()
-        encodings = encodings.to(self.model.device)
+        input_ids = input_ids.clone().to(self.model.device)
 
         match strategy:
             case "greedy":
                 return self._greedy_decode(
-                    encodings=encodings,
+                    input_ids=input_ids,
                     max_new_tokens=max_new_tokens,
                 )
             case "sampling":
                 return self._sampling_decode(
-                    encodings=encodings,
+                    input_ids=input_ids,
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     replacement=replacement,
                 )
             case "top_k":
                 return self._top_k_decode(
-                    encodings=encodings,
+                    input_ids=input_ids,
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     top_k=top_k,
@@ -60,14 +60,11 @@ class TextGenerator:
             case _:
                 raise ValueError(f"Invalid decoding strategy: {strategy}")
 
-    def _greedy_decode(self, encodings, max_new_tokens: int):
-        input_ids: torch.Tensor = encodings.pop("input_ids").clone()
-
+    def _greedy_decode(self, input_ids: torch.Tensor, max_new_tokens: int):
         for _ in tqdm(range(max_new_tokens)):
-            logits = self.model(input_ids=input_ids, **encodings).logits
+            logits = self.model(input_ids).logits
             next_token_probs = F.softmax(logits[:, -1, :], dim=-1)
 
-            # [batch size, 1, dim] => [batch size, 1]
             next_token = torch.argmax(next_token_probs, dim=-1, keepdim=True)
             input_ids = torch.cat([input_ids, next_token], dim=-1)
 
@@ -75,39 +72,34 @@ class TextGenerator:
 
     def _sampling_decode(
         self,
-        encodings,
+        input_ids: torch.Tensor,
         temperature: float,
         max_new_tokens: int,
         replacement: bool = True,
     ):
-        input_ids: torch.Tensor = encodings.pop("input_ids").clone()
-
         for _ in tqdm(range(max_new_tokens)):
-            logits = self.model(input_ids=input_ids, **encodings).logits
-            scaled_logits = logits[:, -1, :] / temperature
+            logits = self.model(input_ids).logits / temperature
+            probs = F.softmax(logits[:, -1, :], dim=-1)
 
-            next_token_probs = F.softmax(scaled_logits[:, -1, :], dim=-1)
             next_token = torch.multinomial(
-                next_token_probs,
+                probs,
                 num_samples=1,
                 replacement=replacement,
             )
 
-            input_ids = torch.cat([input_ids, next_token], dim=-1)
+            input_ids = torch.cat([input_ids, next_token], dim=1)
 
         return input_ids
 
     def _top_k_decode(
         self,
-        encodings,
+        input_ids: torch.Tensor,
         top_k: int,
         max_new_tokens: int,
         temperature: float,
     ):
-        input_ids: torch.Tensor = encodings.pop("input_ids").clone()
-
         for _ in tqdm(range(max_new_tokens)):
-            logits = self.model(input_ids=input_ids, **encodings).logits
+            logits = self.model(input_ids).logits
             scaled_logits = logits[:, -1, :] / temperature
 
             # Get top-k values and indices
@@ -126,16 +118,15 @@ class TextGenerator:
 
     def _beam_search_decode(
         self,
-        encodings,
+        input_ids: torch.Tensor,
         max_new_tokens: int,
         beam_size: int,
         temperature: float,
     ):
-        input_ids: torch.Tensor = encodings.pop("input_ids").clone()
         batch_size = input_ids.size(0)
 
         for idx in tqdm(range(max_new_tokens)):
-            logits = self.model(input_ids=input_ids, **encodings).logits
+            logits = self.model(input_ids).logits
             # Scale logits by temperature
             scaled_logits = logits[:, -1, :] / temperature
 
