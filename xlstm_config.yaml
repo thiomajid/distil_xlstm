@@ -2,7 +2,7 @@ vocab_size: 32_000
 context_length: 512
 num_blocks: 6
 embedding_dim: 256
-slstm_at: []
+slstm_at: [0, 2, 4]
 
 mlstm_block:
   mlstm:
@@ -12,7 +12,7 @@ mlstm_block:
 
 slstm_block:
   slstm:
-    backend: "vanilla"
+    backend: "cuda"
     num_heads: 16
     conv1d_kernel_size: 4
     bias_init: "powerlaw_blockdependent"
