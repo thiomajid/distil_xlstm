@@ -5,12 +5,12 @@ from datasets import IterableDataset, load_dataset
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from distil_xlstm.trainer.trainer_arguments import KDArguments
-
 
 def get_dataset(
-    args: KDArguments,
+    hub_url: str,
+    subset: Optional[str],
     *,
+    features: list[str],
     max_seq_length: int,
     tokenizer: AutoTokenizer,
     split: str,
@@ -18,19 +18,10 @@ def get_dataset(
 ):
     data_stream: Optional[IterableDataset] = None
 
-    if args.data_subset is not None:
-        data_stream = load_dataset(
-            args.dataset_url,
-            args.data_subset,
-            split=split,
-            streaming=True,
-        )
+    if subset is not None:
+        data_stream = load_dataset(hub_url, subset, split=split, streaming=True)
     else:
-        data_stream = load_dataset(
-            args.dataset_url,
-            split=split,
-            streaming=True,
-        )
+        data_stream = load_dataset(hub_url, split=split, streaming=True)
 
     data_points = []
 
@@ -41,7 +32,7 @@ def get_dataset(
 
     def tokenize_text(element):
         encodings = tokenizer(
-            element[args.features[0]],
+            element[features[0]],
             truncation=True,
             max_length=max_seq_length,
             padding="max_length",

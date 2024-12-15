@@ -12,10 +12,13 @@ class KDArguments(TrainingArguments):
 
     dataset_url: str = field(default="allenai/c4")
 
-    data_subset: Optional[str] = field(default=None)
-
+    train_subset: Optional[str] = field(default=None)
     train_samples: int = field(default=10_000)
+    train_split: str = field(default="train")
+
+    eval_subset: Optional[str] = field(default=None)
     eval_samples: int = field(default=5_000)
+    eval_split: str = field(default="validation")
 
     teacher_name: str = field(
         default="Qwen/Qwen2.5-1.5B-Instruct",

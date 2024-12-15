@@ -2,9 +2,14 @@
 teacher_name: "Qwen/Qwen2.5-1.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
-dataset_url: "allenai/c4"
-data_subset: "en"
+dataset_url: "HuggingFaceFW/fineweb"
+
+train_subset: "default"
+train_split: "train"
 train_samples: 10000
+
+eval_subset: "CC-MAIN-2018-43"
+eval_split: "train"
 eval_samples: 1000
 features: ["text"]
 
