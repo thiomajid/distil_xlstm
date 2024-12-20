@@ -34,33 +34,20 @@ class KDArguments(TrainingArguments):
         },
     )
 
-    ce_weight: float = field(
-        default=1,
-        metadata={"help": "Ratio of CE loss"},
-    )
-
-    final_ce_weight: float = field(
-        default=1,
+    delta: float = field(
+        default=0.09,
         metadata={
-            "help": "The maximum/minimum value that the ce_weight can take during training"
+            "help": "$\Delta$ rescales the temperature and alpha at the start of each epoch"
         },
     )
 
-    ce_schedule: ParamScheduleType = "no-op"
-
-    kl_weight: float = field(
-        default=0.1,
-        metadata={"help": "Ratio o KL loss"},
+    alpha: float = field(
+        default=0.8,
+        metadata={"help": "$\alpha$ term weighing the loss function terms"},
     )
 
-    final_kl_weight: float = field(
-        default=1,
-        metadata={
-            "help": "The maximum/minimum value that the kl_weight can take during training"
-        },
-    )
-
-    kl_schedule: ParamScheduleType = "increase"
+    final_alpha: float = field(default=0.5)
+    alpha_schedule: ParamScheduleType = "decreasing"
 
     temperature: float = field(
         default=2,
@@ -74,4 +61,4 @@ class KDArguments(TrainingArguments):
         },
     )
 
-    temperature_schedule: ParamScheduleType = "decrease"
+    temperature_schedule: ParamScheduleType = "decreasing"
