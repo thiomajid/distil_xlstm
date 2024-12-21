@@ -6,11 +6,11 @@ dataset_url: "HuggingFaceFW/fineweb"
 
 train_subset: "default"
 train_split: "train"
-train_samples: 1000
+train_samples: 10000
 
 eval_subset: "CC-MAIN-2018-43"
 eval_split: "train"
-eval_samples: 100
+eval_samples: 1000
 features: ["text"]
 
 # Loss alpha weight
