@@ -25,15 +25,15 @@ final_temperature: 1
 temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
-num_train_epochs: 5
+num_train_epochs: 2
 gradient_accumulation_steps: 4
 learning_rate: 0.0002
 # weight_decay: 0.001
 warmup_ratio: 0.1
 lr_scheduler_type: "cosine"
 torch_compile: false
-per_device_train_batch_size: 4
-per_device_eval_batch_size: 4
+per_device_train_batch_size: 16
+per_device_eval_batch_size: 16
 
 output_dir: "artifacts"
 logging_dir: "logs"
