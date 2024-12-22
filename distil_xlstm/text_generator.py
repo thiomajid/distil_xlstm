@@ -29,7 +29,7 @@ class TextGenerator:
     ):
         self.model.eval()
         input_ids = input_ids.clone().to(self.model.device)
-        
+
         match strategy:
             case "greedy":
                 return self._greedy_decode(
