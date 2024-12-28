@@ -12,10 +12,13 @@ class KDArguments(TrainingArguments):
 
     dataset_url: str = field(default="allenai/c4")
 
-    data_subset: Optional[str] = field(default=None)
-
+    train_subset: Optional[str] = field(default=None)
     train_samples: int = field(default=10_000)
+    train_split: str = field(default="train")
+
+    eval_subset: Optional[str] = field(default=None)
     eval_samples: int = field(default=5_000)
+    eval_split: str = field(default="validation")
 
     teacher_name: str = field(
         default="Qwen/Qwen2.5-1.5B-Instruct",
@@ -24,33 +27,27 @@ class KDArguments(TrainingArguments):
 
     quantize_teacher: bool = field(default=True)
 
-    ce_weight: float = field(
-        default=1,
-        metadata={"help": "Ratio of CE loss"},
-    )
-
-    final_ce_weight: float = field(
-        default=1,
+    features: list[str] = field(
+        default_factory=list,
         metadata={
-            "help": "The maximum/minimum value that the ce_weight can take during training"
+            "help": "Columns from the dataset that will be used to create input data for the model"
         },
     )
 
-    ce_schedule: ParamScheduleType = "no-op"
-
-    kl_weight: float = field(
-        default=0.1,
-        metadata={"help": "Ratio o KL loss"},
-    )
-
-    final_kl_weight: float = field(
-        default=1,
+    delta: float = field(
+        default=0.09,
         metadata={
-            "help": "The maximum/minimum value that the kl_weight can take during training"
+            "help": "$\Delta$ rescales the temperature and alpha at the start of each epoch"
         },
     )
 
-    kl_schedule: ParamScheduleType = "increase"
+    alpha: float = field(
+        default=0.8,
+        metadata={"help": "$\alpha$ term weighing the loss function terms"},
+    )
+
+    final_alpha: float = field(default=0.5)
+    alpha_schedule: ParamScheduleType = "decreasing"
 
     temperature: float = field(
         default=2,
@@ -64,4 +61,4 @@ class KDArguments(TrainingArguments):
         },
     )
 
-    temperature_schedule: ParamScheduleType = "decrease"
+    temperature_schedule: ParamScheduleType = "decreasing"
