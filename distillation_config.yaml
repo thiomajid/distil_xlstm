@@ -55,6 +55,6 @@ fp16: true
 use_cpu: false
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/smooth-distil-xlstm"
+hub_model_id: "thiomajid/cka-distil-xlstm"
 gradient_checkpointing: false
 remove_unused_columns: false
