@@ -2,14 +2,14 @@
 teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
-dataset_url: "HuggingFaceFW/fineweb"
+dataset_url: "cerebras/SlimPajama-627B"
 
-train_subset: "default"
+# train_subset: "default"
 train_split: "train"
 train_samples: 1000
 
-eval_subset: "CC-MAIN-2018-43"
-eval_split: "train"
+# eval_subset: "CC-MAIN-2018-43"
+eval_split: "validation"
 eval_samples: 250
 features: ["text"]
 
@@ -53,5 +53,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/cka-distil-xlstm"
+hub_model_id: "thiomajid/smooth-distil-xlstm"
 remove_unused_columns: false
