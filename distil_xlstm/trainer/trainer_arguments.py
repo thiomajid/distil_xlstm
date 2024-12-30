@@ -49,6 +49,14 @@ class KDArguments(TrainingArguments):
     final_alpha: float = field(default=0.5)
     alpha_schedule: ParamScheduleType = "decreasing"
 
+    beta: float = field(
+        default=0.2,
+        metadata={"help": "$\beta$ term weighing the KL loss"},
+    )
+
+    final_beta: float = field(default=0.2)
+    beta_schedule: ParamScheduleType = "no-op"
+
     temperature: float = field(
         default=2,
         metadata={"help": "Temperature used to softnen probs"},

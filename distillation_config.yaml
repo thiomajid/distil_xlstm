@@ -6,7 +6,7 @@ dataset_url: "HuggingFaceFW/fineweb"
 
 train_subset: "default"
 train_split: "train"
-train_samples: 1000
+train_samples: 2000
 
 eval_subset: "CC-MAIN-2018-43"
 eval_split: "train"
@@ -15,9 +15,14 @@ features: ["text"]
 
 # Loss alpha weight
 delta: 0.05
+
 alpha: 0.8
 final_alpha: 0.5
 alpha_schedule: "decrease"
+
+beta: 0.2
+final_beta: 0.2
+beta_schedule: "no-op"
 
 # Temperature args
 temperature: 2
@@ -25,7 +30,7 @@ final_temperature: 1
 temperature_schedule: "decrease"
 
 # HF TrainerArguments arguments
-num_train_epochs: 2
+num_train_epochs: 3
 gradient_accumulation_steps: 2
 learning_rate: 0.0002
 # weight_decay: 0.001
