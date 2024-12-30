@@ -1,6 +1,3 @@
-from functools import partial
-
-import torch.nn.functional as F
 from transformers import AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -24,7 +21,6 @@ class VanillaTrainer(Trainer):
         )
 
         self.args = args
-        self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
 
     def compute_loss(self, model: DistilxLSTM, inputs, return_outputs=False, **kwargs):
         student_output: CausalLMOutputWithPast = model(
