@@ -10,6 +10,58 @@ from distil_xlstm.modeling import DistilxLSTM
 from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
+def cka_loss(teacher_h: torch.Tensor, student_h: torch.Tensor):
+    """
+    Computes the CKA loss between teacher and student hidden states using the HSIC approach.
+
+    Args:
+        teacher_h (torch.Tensor): Hidden states from the teacher model of shape (batch_size, hidden_dim).
+        student_h (torch.Tensor): Hidden states from the student model of shape (batch_size, hidden_dim).
+
+    Returns:
+        torch.Tensor: Scalar loss representing the CKA similarity between the two tensors.
+    """
+
+    # Reshape all tensors to be 2D
+    teacher_h = teacher_h.reshape(-1, teacher_h.shape[-1])
+    student_h = student_h.reshape(-1, student_h.shape[-1])
+
+    def center_matrix(x):
+        """Centers a matrix by subtracting its mean."""
+        mean = x.mean(dim=0, keepdim=True)
+        return x - mean
+
+    def hsic(x, y):
+        """Computes the Hilbert-Schmidt Independence Criterion (HSIC) between two matrices."""
+        n = x.size(0)
+        assert n == y.size(0), "Input matrices must have the same number of samples"
+
+        # Center the matrices
+        x_centered = center_matrix(x)
+        y_centered = center_matrix(y)
+
+        # Compute Gram matrices
+        gram_x = x_centered @ x_centered.T
+        gram_y = y_centered @ y_centered.T
+
+        # Compute HSIC
+        hsic_value = (gram_x * gram_y).sum() / (n**2)
+        return hsic_value
+
+    # Compute HSIC for teacher and student hidden states
+    hsic_teacher_student = hsic(teacher_h, student_h)
+    hsic_teacher_teacher = hsic(teacher_h, teacher_h)
+    hsic_student_student = hsic(student_h, student_h)
+
+    # Compute CKA similarity
+    cka_similarity = hsic_teacher_student / (
+        torch.sqrt(hsic_teacher_teacher * hsic_student_student) + 1e-8
+    )
+    cka_loss = 1 - cka_similarity  # Loss is 1 - similarity
+
+    return cka_loss
+
+
 class KDTrainer(Trainer):
     def __init__(
         self,
@@ -28,7 +80,6 @@ class KDTrainer(Trainer):
 
         self.args = args
         self.teacher = teacher_model
-
         self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
 
     @torch.no_grad()
@@ -72,15 +123,28 @@ class KDTrainer(Trainer):
         # Compute KL divergence loss
         kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
 
+        # computing the CKA loss
+        avg_teacher_hidden_states = torch.cat(teacher_output.hidden_states).mean(
+            dim=0,
+            keepdim=True,
+        )
+
+        cka_loss_value = cka_loss(
+            avg_teacher_hidden_states,
+            student_output.hidden_states,
+        )
+
+        # Compute the total loss
         alpha = self.args.alpha
-        # beta = self.args.beta
+        beta = self.args.beta
         ce_loss = student_output.loss
         scaled_temperature = T**2
 
         ce_loss_term = (1 - alpha) * ce_loss
-        kl_loss_term = alpha * scaled_temperature * kl_loss
+        kl_loss_term = beta * scaled_temperature * kl_loss
+        cka_loss_term = alpha * cka_loss_value
 
-        total_loss = ce_loss_term + kl_loss_term
+        total_loss = ce_loss_term + kl_loss_term + cka_loss_term
 
         self.log(
             {
@@ -89,6 +153,8 @@ class KDTrainer(Trainer):
                 "total_loss": total_loss.item(),
                 "temperature": T,
                 "alpha": alpha,
+                "beta": beta,
+                "cka_loss": cka_loss_value.item(),
             }
         )
 

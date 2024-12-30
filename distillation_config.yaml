@@ -32,8 +32,8 @@ temperature_schedule: "decrease"
 # HF TrainerArguments arguments
 num_train_epochs: 2
 gradient_accumulation_steps: 2
-per_device_train_batch_size: 2
-per_device_eval_batch_size: 2
+per_device_train_batch_size: 4
+per_device_eval_batch_size: 4
 
 learning_rate: 0.0002
 # weight_decay: 0.001
@@ -57,5 +57,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/smooth-distil-xlstm"
+hub_model_id: "thiomajid/cka-distil-xlstm"
 remove_unused_columns: false
