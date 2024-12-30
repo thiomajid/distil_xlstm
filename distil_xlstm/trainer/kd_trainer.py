@@ -132,7 +132,7 @@ class KDTrainer(Trainer):
         kl_loss_term = beta * scaled_temperature * kl_loss
         cka_loss_term = alpha * cka_loss_value
 
-        total_loss = ce_loss_term + kl_loss_term + cka_loss_term
+        total_loss: torch.Tensor = ce_loss_term + kl_loss_term + cka_loss_term
 
         self.log(
             {
