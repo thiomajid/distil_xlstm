@@ -10,50 +10,6 @@ from distil_xlstm.modeling import DistilxLSTM
 from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
-def cka_loss(teacher_reps: torch.Tensor, student_reps: torch.Tensor):
-    """
-    Compute the Centered Kernel Alignment (CKA) loss between teacher and student representations.
-
-    Parameters
-    ----------
-    teacher_reps : torch.Tensor
-        Hidden states from the teacher model (shape: [batch_size, sequence_length, teacher_hidden_size]).
-    student_reps : torch.Tensor
-        Hidden states from the student model (shape: [batch_size, sequence_length, student_hidden_size]).
-
-    Returns
-    -------
-    torch.Tensor
-        The CKA loss.
-    """
-
-    assert (
-        teacher_reps.shape[:2] == student_reps.shape[:2]
-    ), "Teacher and student representations must have the same batch_size and sequence_length."
-
-    # Reshape the tensors to 2D: [batch_size * sequence_length, hidden_size]
-    teacher_reps = teacher_reps.view(-1, teacher_reps.size(-1))  # Flatten to 2D
-    student_reps = student_reps.view(-1, student_reps.size(-1))  # Flatten to 2D
-
-    # Center the representations
-    teacher_reps = teacher_reps - teacher_reps.mean(dim=0)
-    student_reps = student_reps - student_reps.mean(dim=0)
-
-    # Compute the Gram matrices
-    gram_teacher = torch.matmul(teacher_reps, teacher_reps.t())
-    gram_student = torch.matmul(student_reps, student_reps.t())
-
-    # Compute the HSIC (Hilbert-Schmidt Independence Criterion)
-    hsic = torch.sum(gram_teacher * gram_student)  # Element-wise multiplication and sum
-    norm_teacher = torch.norm(gram_teacher, p="fro") ** 2
-    norm_student = torch.norm(gram_student, p="fro") ** 2
-
-    cka = hsic / (norm_teacher * norm_student)
-
-    # Return the CKA loss (1 - CKA to minimize)
-    return 1 - cka
-
-
 class KDTrainer(Trainer):
     def __init__(
         self,
@@ -100,49 +56,39 @@ class KDTrainer(Trainer):
         """
 
         student_output: CausalLMOutputWithPast = model(
-            **inputs, output_hidden_states=True
+            **inputs,
+            output_hidden_states=True,
         )
-
         student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
-        student_last_hidden_states = student_output.hidden_states[-1]
 
         teacher_output: CausalLMOutputWithPast = self._teacher_forward(inputs)
         teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
-        teacher_last_hidden_states = teacher_output.hidden_states[-1].detach()
 
         # Compute the cross-entropy loss
-        temperature = self.args.temperature
-        student_probs = F.log_softmax(student_logits / temperature, dim=-1)
-        teacher_probs = F.softmax(teacher_logits / temperature, dim=-1)
+        T = self.args.temperature
+        student_probs = F.log_softmax(student_logits / T, dim=-1)
+        teacher_probs = F.softmax(teacher_logits / T, dim=-1)
 
         # Compute KL divergence loss
         kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
 
-        # Compute CKA loss
-        cka_loss_value = cka_loss(
-            teacher_last_hidden_states, student_last_hidden_states
-        )
-
-        alpha = self.args.alpha  # Weight for CKA loss
-        beta = self.args.beta  # Weight for KL loss
+        alpha = self.args.alpha
+        # beta = self.args.beta
         ce_loss = student_output.loss
-        scaled_temperature = temperature**2
+        scaled_temperature = T**2
 
         ce_loss_term = (1 - alpha) * ce_loss
-        kl_loss_term = beta * scaled_temperature * kl_loss
-        cka_loss_term = alpha * cka_loss_value
+        kl_loss_term = alpha * scaled_temperature * kl_loss
 
-        total_loss = ce_loss_term + kl_loss_term + cka_loss_term
+        total_loss = ce_loss_term + kl_loss_term
 
         self.log(
             {
                 "ce_loss": ce_loss.item(),
                 "kl_loss": kl_loss.item(),
-                "cka_loss": cka_loss_value.item(),
                 "total_loss": total_loss.item(),
-                "temperature": temperature,
+                "temperature": T,
                 "alpha": alpha,
-                "beta": beta,
             }
         )
 

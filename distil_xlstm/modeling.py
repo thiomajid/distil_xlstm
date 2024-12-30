@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Optional
 
 import safetensors
-import safetensors.torch
 import torch
 import torch.nn.functional as F
 import yaml
