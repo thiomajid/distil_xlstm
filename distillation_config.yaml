@@ -20,10 +20,6 @@ alpha: 0.8
 final_alpha: 0.5
 alpha_schedule: "decrease"
 
-beta: 0.2
-final_beta: 0.2
-beta_schedule: "no-op"
-
 # Temperature args
 temperature: 2
 final_temperature: 0.7
