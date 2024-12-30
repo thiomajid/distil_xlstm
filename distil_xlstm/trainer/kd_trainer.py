@@ -17,15 +17,19 @@ def cka_loss(teacher_reps: torch.Tensor, student_reps: torch.Tensor):
     Parameters
     ----------
     teacher_reps : torch.Tensor
-        Hidden states from the teacher model.
+        Hidden states from the teacher model (shape: [batch_size, sequence_length, hidden_size]).
     student_reps : torch.Tensor
-        Hidden states from the student model.
+        Hidden states from the student model (shape: [batch_size, sequence_length, hidden_size]).
 
     Returns
     -------
     torch.Tensor
         The CKA loss.
     """
+    # Reshape the tensors to 2D: [batch_size * sequence_length, hidden_size]
+    teacher_reps = teacher_reps.view(-1, teacher_reps.size(-1))  # Flatten to 2D
+    student_reps = student_reps.view(-1, student_reps.size(-1))  # Flatten to 2D
+
     # Center the representations
     teacher_reps = teacher_reps - teacher_reps.mean(dim=0)
     student_reps = student_reps - student_reps.mean(dim=0)
