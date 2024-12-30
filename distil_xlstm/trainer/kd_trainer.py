@@ -17,15 +17,20 @@ def cka_loss(teacher_reps: torch.Tensor, student_reps: torch.Tensor):
     Parameters
     ----------
     teacher_reps : torch.Tensor
-        Hidden states from the teacher model (shape: [batch_size, sequence_length, hidden_size]).
+        Hidden states from the teacher model (shape: [batch_size, sequence_length, teacher_hidden_size]).
     student_reps : torch.Tensor
-        Hidden states from the student model (shape: [batch_size, sequence_length, hidden_size]).
+        Hidden states from the student model (shape: [batch_size, sequence_length, student_hidden_size]).
 
     Returns
     -------
     torch.Tensor
         The CKA loss.
     """
+
+    assert (
+        teacher_reps.shape[:2] == student_reps.shape[:2]
+    ), "Teacher and student representations must have the same batch_size and sequence_length."
+
     # Reshape the tensors to 2D: [batch_size * sequence_length, hidden_size]
     teacher_reps = teacher_reps.view(-1, teacher_reps.size(-1))  # Flatten to 2D
     student_reps = student_reps.view(-1, student_reps.size(-1))  # Flatten to 2D
@@ -39,11 +44,10 @@ def cka_loss(teacher_reps: torch.Tensor, student_reps: torch.Tensor):
     gram_student = torch.matmul(student_reps, student_reps.t())
 
     # Compute the HSIC (Hilbert-Schmidt Independence Criterion)
-    hsic = torch.norm(torch.matmul(gram_teacher, gram_student), p="fro") ** 2
+    hsic = torch.sum(gram_teacher * gram_student)  # Element-wise multiplication and sum
     norm_teacher = torch.norm(gram_teacher, p="fro") ** 2
     norm_student = torch.norm(gram_student, p="fro") ** 2
 
-    # Compute CKA
     cka = hsic / (norm_teacher * norm_student)
 
     # Return the CKA loss (1 - CKA to minimize)
