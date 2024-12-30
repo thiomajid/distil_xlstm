@@ -14,12 +14,7 @@ class AnnealingCallback(TrainerCallback):
         self.temperature_scheduler = temperature_scheduler
         self.alpha_scheduler = alpha_scheduler
 
-    def on_step_end(self, args, state, control, **kwargs):
-        if state.is_world_process_zero:
-            args.temperature = self.temperature_scheduler.update()
-            args.alpha = self.alpha_scheduler.update()
-
     def on_epoch_end(self, args, state, control, **kwargs):
         if state.is_world_process_zero:
-            self.temperature_scheduler.downscale_on_epoch_end()
-            self.alpha_scheduler.downscale_on_epoch_end()
+            self.temperature_scheduler.update()
+            self.alpha_scheduler.update()
