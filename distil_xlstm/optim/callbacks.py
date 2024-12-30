@@ -16,5 +16,5 @@ class AnnealingCallback(TrainerCallback):
 
     def on_epoch_end(self, args, state, control, **kwargs):
         if state.is_world_process_zero:
-            self.temperature_scheduler.update()
-            self.alpha_scheduler.update()
+            args.temperature = self.temperature_scheduler.update()
+            args.alpha = self.alpha_scheduler.update()
