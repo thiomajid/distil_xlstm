@@ -7,6 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from distil_xlstm.modeling import DistilxLSTM
+from distil_xlstm.optim.loss import FrobeniusLoss
 from distil_xlstm.trainer.trainer_arguments import KDArguments
 
 
@@ -30,6 +31,7 @@ class KDTrainer(Trainer):
         self.teacher = teacher_model
 
         self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
+        self.frobenius_loss = FrobeniusLoss()
 
     @torch.no_grad()
     def _teacher_forward(self, inputs) -> CausalLMOutputWithPast:
@@ -71,7 +73,7 @@ class KDTrainer(Trainer):
         kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
 
         # Compute Frobenius loss
-        frobenius_loss = self._frobenius_loss(
+        frobenius_loss: torch.Tensor = self.frobenius_loss(
             teacher_hidden_state=teacher_output.hidden_states,
             student_hidden_state=student_output.hidden_states,
         )
@@ -100,36 +102,3 @@ class KDTrainer(Trainer):
         )
 
         return (total_loss, student_output) if return_outputs else total_loss
-
-    def _frobenius_loss(
-        self,
-        teacher_hidden_state: torch.Tensor,
-        student_hidden_state: torch.Tensor,
-    ):
-        if isinstance(teacher_hidden_state, tuple):
-            teacher_hidden_state = torch.cat(teacher_hidden_state, dim=0)
-
-        batch_size = student_hidden_state.shape[0]
-
-        teacher_hidden_state = rearrange(
-            teacher_hidden_state,
-            "(n b) s d -> b n s d",
-            b=batch_size,
-        )
-
-        # layer-wise average of teacher hidden states
-        # (batch_size, num_layers, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
-        avg_teacher_hidden_state = teacher_hidden_state.mean(dim=1)
-
-        if student_hidden_state.shape != avg_teacher_hidden_state.shape:
-            raise ValueError(
-                f"Shape mismatch: student hidden state has shape {student_hidden_state.shape}, "
-                f"but averaged teacher hidden state has shape {avg_teacher_hidden_state.shape}."
-            )
-
-        norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro")
-
-        # normalize by the number of elements in the tensor
-        norm = norm / student_hidden_state.numel()
-
-        return norm
