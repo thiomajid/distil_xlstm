@@ -109,12 +109,15 @@ class KDTrainer(Trainer):
         if isinstance(teacher_hidden_state, tuple):
             teacher_hidden_state = torch.cat(teacher_hidden_state, dim=0)
 
-        avg_teacher_hidden_state = teacher_hidden_state.mean(dim=0, keepdim=True)
-
-        # Repeat the averaged teacher hidden state to match the student's batch size
-        avg_teacher_hidden_state = avg_teacher_hidden_state.repeat(
-            student_hidden_state.shape[0], 1, 1
+        teacher_hidden_state = rearrange(
+            teacher_hidden_state,
+            "(n b) s d -> b n s d",
+            b=student_hidden_state.shape[0],
         )
+
+        # layer-wise average of teacher hidden states
+        # (batch_size, num_layers, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
+        avg_teacher_hidden_state = teacher_hidden_state.mean(dim=1)
 
         if student_hidden_state.shape != avg_teacher_hidden_state.shape:
             raise ValueError(
@@ -123,5 +126,8 @@ class KDTrainer(Trainer):
             )
 
         norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro")
+
+        # normalize by the number of elements in the tensor
+        norm /= student_hidden_state.numel()
 
         return norm
