@@ -122,6 +122,6 @@ class KDTrainer(Trainer):
                 f"but averaged teacher hidden state has shape {avg_teacher_hidden_state.shape}."
             )
 
-        norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro") ** 2
+        norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro")
 
         return norm

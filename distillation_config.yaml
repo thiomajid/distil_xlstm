@@ -16,9 +16,9 @@ features: ["text"]
 # Loss terms weights
 delta: 0.01
 
-alpha: 0.8
+alpha: 0.5
 final_alpha: 0.5
-alpha_schedule: "decreasing"
+alpha_schedule: "no-op"
 
 frobenius_weight: 0.8
 final_frobenius_weight: 0.5
