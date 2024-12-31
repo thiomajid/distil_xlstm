@@ -109,14 +109,14 @@ class KDTrainer(Trainer):
         if isinstance(teacher_hidden_state, tuple):
             teacher_hidden_state = torch.cat(teacher_hidden_state, dim=0)
 
-        avg_teacher_hidden_state = teacher_hidden_state.mean(dim=0, keepdim=True)
+        # avg_teacher_hidden_state = teacher_hidden_state.mean(dim=0, keepdim=True)
 
-        if student_hidden_state.shape != avg_teacher_hidden_state.shape:
+        if student_hidden_state.shape != teacher_hidden_state.shape:
             raise ValueError(
                 f"Shape mismatch: student hidden state has shape {student_hidden_state.shape}, "
-                f"but averaged teacher hidden state has shape {avg_teacher_hidden_state.shape}."
+                f"but averaged teacher hidden state has shape {teacher_hidden_state.shape}."
             )
 
-        norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro") ** 2
+        norm = torch.norm(teacher_hidden_state - student_hidden_state, p="fro") ** 2
 
         return norm
