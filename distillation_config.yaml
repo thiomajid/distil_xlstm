@@ -20,9 +20,9 @@ alpha: 0.5
 final_alpha: 0.5
 alpha_schedule: "no-op"
 
-frobenius_weight: 0.8
+frobenius_weight: 0.5
 final_frobenius_weight: 0.5
-frobenius_schedule: "decreasing"
+frobenius_schedule: "no-op"
 
 # Temperature args
 temperature: 2
