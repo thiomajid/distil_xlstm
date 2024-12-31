@@ -1,3 +1,5 @@
+import math
+
 import torch
 from einops import rearrange
 from torch import nn
@@ -64,7 +66,8 @@ class FrobeniusLoss(nn.Module):
 
         norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro")
 
-        # normalize by the number of elements in the tensor
-        norm = norm / student_hidden_state.numel()
+        # normalize by \sqrt{num_elements} prevents the loss from being too
+        # large or too small especially for large tensors
+        norm = norm / math.sqrt(student_hidden_state.numel())
 
         return norm
