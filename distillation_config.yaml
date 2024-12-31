@@ -18,12 +18,16 @@ delta: 0.01
 
 alpha: 0.8
 final_alpha: 0.5
-alpha_schedule: "decrease"
+alpha_schedule: "decreasing"
+
+frobenius_weight: 0.8
+final_frobenius_weight: 0.5
+frobenius_schedule: "decreasing"
 
 # Temperature args
 temperature: 2
 final_temperature: 0.7
-temperature_schedule: "decrease"
+temperature_schedule: "decreasing"
 
 # HF TrainerArguments arguments
 num_train_epochs: 2

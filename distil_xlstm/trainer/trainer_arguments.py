@@ -49,6 +49,14 @@ class KDArguments(TrainingArguments):
     final_alpha: float = field(default=0.5)
     alpha_schedule: ParamScheduleType = "decreasing"
 
+    frobenius_weight: float = field(
+        default=0.8,
+        metadata={"help": "Weight of the Frobenius norm loss"},
+    )
+
+    final_frobenius_weight: float = field(default=0.5)
+    frobenius_schedule: ParamScheduleType = "decreasing"
+
     temperature: float = field(
         default=2,
         metadata={"help": "Temperature used to softnen probs"},

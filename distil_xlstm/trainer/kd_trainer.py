@@ -64,22 +64,28 @@ class KDTrainer(Trainer):
         teacher_output: CausalLMOutputWithPast = self._teacher_forward(inputs)
         teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
 
-        # Compute the cross-entropy loss
+        # Compute KL divergence loss
         T = self.args.temperature
         student_probs = F.log_softmax(student_logits / T, dim=-1)
         teacher_probs = F.softmax(teacher_logits / T, dim=-1)
-
-        # Compute KL divergence loss
         kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
 
+        # Compute Frobenius loss
+        frobenius_loss = self._frobenius_loss(
+            teacher_hidden_state=teacher_output.hidden_states,
+            student_hidden_state=student_output.hidden_states,
+        )
+
         alpha = self.args.alpha
+        fro_weight = self.args.frobenius_weight
         ce_loss = student_output.loss
         scaled_temperature = T**2
 
-        ce_loss_term = (1 - alpha) * ce_loss
+        ce_loss_term = (1 - fro_weight) * ce_loss
         kl_loss_term = alpha * scaled_temperature * kl_loss
+        frobenius_loss_term = fro_weight * frobenius_loss
 
-        total_loss = ce_loss_term + kl_loss_term
+        total_loss = ce_loss_term + kl_loss_term + frobenius_loss_term
 
         self.log(
             {
@@ -88,7 +94,29 @@ class KDTrainer(Trainer):
                 "total_loss": total_loss.item(),
                 "temperature": T,
                 "alpha": alpha,
+                "frobenius_weight": fro_weight,
+                "frobenius_loss": frobenius_loss.item(),
             }
         )
 
         return (total_loss, student_output) if return_outputs else total_loss
+
+    def _frobenius_loss(
+        self,
+        teacher_hidden_state: torch.Tensor,
+        student_hidden_state: torch.Tensor,
+    ):
+        if isinstance(teacher_hidden_state, tuple):
+            teacher_hidden_state = torch.cat(teacher_hidden_state, dim=0)
+
+        avg_teacher_hidden_state = teacher_hidden_state.mean(dim=0, keepdim=True)
+
+        if student_hidden_state.shape != avg_teacher_hidden_state.shape:
+            raise ValueError(
+                f"Shape mismatch: student hidden state has shape {student_hidden_state.shape}, "
+                f"but averaged teacher hidden state has shape {avg_teacher_hidden_state.shape}."
+            )
+
+        norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro") ** 2
+
+        return norm
