@@ -57,5 +57,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/raw-xlstm"
+hub_model_id: "thiomajid/frobenius-distil-xlstm"
 remove_unused_columns: false
