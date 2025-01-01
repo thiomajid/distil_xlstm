@@ -1,16 +1,16 @@
 # Custom training arguments
-teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
+teacher_name: "Qwen/Qwen2.5-1.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 dataset_url: "HuggingFaceFW/fineweb"
 
 train_subset: "default"
 train_split: "train"
-train_samples: 1000
+train_samples: 10000
 
 eval_subset: "CC-MAIN-2018-43"
 eval_split: "train"
-eval_samples: 250
+eval_samples: 1000
 features: ["text"]
 
 # Loss terms weights
@@ -31,9 +31,9 @@ temperature_schedule: "decreasing"
 
 # HF TrainerArguments arguments
 num_train_epochs: 2
-gradient_accumulation_steps: 2
-per_device_train_batch_size: 4
-per_device_eval_batch_size: 4
+gradient_accumulation_steps: 4
+per_device_train_batch_size: 8
+per_device_eval_batch_size: 8
 
 learning_rate: 0.0002
 # weight_decay: 0.001
@@ -57,5 +57,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/sqrt-frobenius-distil-xlstm"
+hub_model_id: "thiomajid/raw-xlstm"
 remove_unused_columns: false
