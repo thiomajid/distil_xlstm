@@ -78,14 +78,12 @@ class KDTrainer(Trainer):
             student_hidden_state=student_output.hidden_states,
         )
 
-        alpha = self.args.alpha
-        fro_weight = self.args.frobenius_weight
         ce_loss = student_output.loss
         scaled_temperature = T**2
 
-        ce_loss_term = (1 - fro_weight) * ce_loss
-        kl_loss_term = alpha * scaled_temperature * kl_loss
-        frobenius_loss_term = fro_weight * frobenius_loss
+        ce_loss_term = self.args.ce_weight * ce_loss
+        kl_loss_term = self.args.kl_weight * scaled_temperature * kl_loss
+        frobenius_loss_term = self.args.frobenius_weight * frobenius_loss
 
         total_loss = ce_loss_term + kl_loss_term + frobenius_loss_term
 
@@ -95,8 +93,6 @@ class KDTrainer(Trainer):
                 "kl_loss": kl_loss.item(),
                 "total_loss": total_loss.item(),
                 "temperature": T,
-                "alpha": alpha,
-                "frobenius_weight": fro_weight,
                 "frobenius_loss": frobenius_loss.item(),
             }
         )
