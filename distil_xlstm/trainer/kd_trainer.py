@@ -40,7 +40,7 @@ class KDTrainer(Trainer):
 
     def compute_loss(self, model: DistilxLSTM, inputs, return_outputs=False, **kwargs):
         """
-        Compute the loss as a combination of student cross-entropy loss, knowledge distillation loss, and CKA loss.
+        Compute the loss as a combination of student cross-entropy loss, knowledge distillation loss, and Frobenius loss.
 
         Parameters
         ----------
