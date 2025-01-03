@@ -91,9 +91,8 @@ class KDTrainer(Trainer):
             {
                 "ce_loss": ce_loss.item(),
                 "kl_loss": kl_loss.item(),
-                "total_loss": total_loss.item(),
-                "temperature": T,
                 "frobenius_loss": frobenius_loss.item(),
+                "total_loss": total_loss.item(),
             }
         )
 
