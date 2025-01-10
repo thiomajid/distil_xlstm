@@ -13,6 +13,8 @@ class FrobeniusLoss(nn.Module):
     function is typically used in knowledge distillation tasks where the goal
     is to train a student model to mimic the behavior of a teacher model.
 
+    :math: `L_{Frob} = \frac{1}{\sqrt{N}} \left\| \frac{1}{L} \sum_{l=1}^{L} h_{T}^{(l)} - h_{S}^{(l)} \right\|_{F}`
+
     Methods
     -------
         forward(teacher_hidden_state: torch.Tensor, student_hidden_state: torch.Tensor) -> torch.Tensor
