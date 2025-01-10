@@ -2,7 +2,6 @@ from functools import partial
 
 import torch
 import torch.nn.functional as F
-from einops import rearrange
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -61,16 +60,19 @@ class KDTrainer(Trainer):
             **inputs,
             output_hidden_states=True,
         )
-        student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
+        # student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
 
         teacher_output: CausalLMOutputWithPast = self._teacher_forward(inputs)
-        teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
+        # teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
 
-        # Compute KL divergence loss
-        T = self.args.temperature
-        student_probs = F.log_softmax(student_logits / T, dim=-1)
-        teacher_probs = F.softmax(teacher_logits / T, dim=-1)
-        kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
+        # # Compute KL divergence loss
+        # T = self.args.temperature
+        # student_probs = F.log_softmax(student_logits / T, dim=-1)
+        # teacher_probs = F.softmax(teacher_logits / T, dim=-1)
+        # kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
+
+        # scaled_temperature = T**2
+        # kl_loss_term = self.args.kl_weight * scaled_temperature * kl_loss
 
         # Compute Frobenius loss
         frobenius_loss: torch.Tensor = self.frobenius_loss(
@@ -78,21 +80,19 @@ class KDTrainer(Trainer):
             student_hidden_state=student_output.hidden_states,
         )
 
-        ce_loss = student_output.loss
-        scaled_temperature = T**2
-
-        ce_loss_term = self.args.ce_weight * ce_loss
-        kl_loss_term = self.args.kl_weight * scaled_temperature * kl_loss
         frobenius_loss_term = self.args.frobenius_weight * frobenius_loss
 
-        total_loss = ce_loss_term + kl_loss_term + frobenius_loss_term
+        ce_loss = student_output.loss
+        ce_loss_term = (1 - self.args.frobenius_weight) * ce_loss
+
+        total_loss = ce_loss_term + frobenius_loss_term
 
         self.log(
             {
                 "ce_loss": ce_loss.item(),
-                "kl_loss": kl_loss.item(),
                 "frobenius_loss": frobenius_loss.item(),
                 "total_loss": total_loss.item(),
+                "frobenius_weight": self.args.frobenius_weight,
             }
         )
 
