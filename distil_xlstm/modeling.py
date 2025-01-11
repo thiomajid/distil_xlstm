@@ -121,8 +121,11 @@ class DistilxLSTM(PreTrainedModel):
         if v2:
             xlstm_config_dict["num_blocks"] = teacher_config.num_hidden_layers // 2
             xlstm_config_dict["slstm_at"] = list(
-                range(0, teacher_config.num_hidden_layers, 2)
+                range(0, teacher_config.num_hidden_layers - 1, 2)
             )
+
+            # [0,1,2,3,4,5] => range(0, 6, 1)
+            # write a range that will generate [0, 2, 4] but whose
 
             teacher_num_heads = teacher_config.num_attention_heads
             while teacher_num_heads % 4 == 0:
@@ -153,7 +156,6 @@ class DistilxLSTM(PreTrainedModel):
         xlstm_config_path: str,
         v2: bool = False,
     ) -> "DistilxLSTM":
-        
         model, config = DistilxLSTM.init_for_distillation(
             teacher_model=teacher_model,
             tokenizer=tokenizer,

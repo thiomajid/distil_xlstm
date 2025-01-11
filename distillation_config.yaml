@@ -30,7 +30,7 @@ kl_schedule: "no-op"
 
 frobenius_weight: 0.4
 final_frobenius_weight: 0.2
-frobenius_schedule: "no-op"
+frobenius_schedule: "decreasing"
 
 # Temperature args
 temperature: 2
