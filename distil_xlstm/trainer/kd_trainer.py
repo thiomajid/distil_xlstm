@@ -89,8 +89,9 @@ class KDTrainer(Trainer):
         total_loss = ce_loss_term + frobenius_loss_term
 
         # Compute MSE loss between the hidden states of the teacher and student
+        tmp_h_teacher = torch.cat(teacher_output.hidden_states, dim=0)
         avg_teacher = rearrange(
-            torch.cat(teacher_output.hidden_states.detach(), dim=0),
+            tmp_h_teacher.detach(),
             "(n b) s d -> b n s d",
             b=student_output.hidden_states.shape[0],
         ).mean(dim=1)
