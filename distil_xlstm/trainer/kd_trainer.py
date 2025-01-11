@@ -61,53 +61,40 @@ class KDTrainer(Trainer):
             **inputs,
             output_hidden_states=True,
         )
-        # student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
 
         teacher_output: CausalLMOutputWithPast = self._teacher_forward(inputs)
-        # teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
 
         # # Compute KL divergence loss
-        # T = self.args.temperature
-        # student_probs = F.log_softmax(student_logits / T, dim=-1)
-        # teacher_probs = F.softmax(teacher_logits / T, dim=-1)
-        # kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
+        student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
+        teacher_logits = rearrange(teacher_output.logits.detach(), "b s d -> (b s) d")
+        T = self.args.temperature
 
-        # scaled_temperature = T**2
-        # kl_loss_term = self.args.kl_weight * scaled_temperature * kl_loss
+        student_probs = F.log_softmax(student_logits / T, dim=-1)
+        teacher_probs = F.softmax(teacher_logits / T, dim=-1)
+        kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
+
+        scaled_temperature = T**2
+        kl_loss_term = self.args.kl_weight * scaled_temperature * kl_loss
 
         # Compute Frobenius loss
-        frobenius_loss: torch.Tensor = self.frobenius_loss(
-            teacher_hidden_state=teacher_output.hidden_states,
-            student_hidden_state=student_output.hidden_states,
-        )
+        # frobenius_loss: torch.Tensor = self.frobenius_loss(
+        #     teacher_hidden_state=teacher_output.hidden_states,
+        #     student_hidden_state=student_output.hidden_states,
+        # )
 
-        frobenius_loss_term = self.args.frobenius_weight * frobenius_loss
+        # frobenius_loss_term = self.args.frobenius_weight * frobenius_loss
 
         ce_loss = student_output.loss
-        ce_loss_term = (1 - self.args.frobenius_weight) * ce_loss
+        ce_loss_term = (1 - self.args.kl_weight) * ce_loss
 
-        total_loss = ce_loss_term + frobenius_loss_term
-
-        # Compute MSE loss between the hidden states of the teacher and student
-        tmp_h_teacher = torch.cat(teacher_output.hidden_states, dim=0)
-        avg_teacher = rearrange(
-            tmp_h_teacher.detach(),
-            "(n b) s d -> b n s d",
-            b=student_output.hidden_states.shape[0],
-        ).mean(dim=1)
-
-        mse_loss = F.mse_loss(
-            student_output.hidden_states.detach(),
-            avg_teacher,
-        )
+        total_loss = ce_loss_term + kl_loss_term
 
         self.log(
             {
                 "ce_loss": ce_loss.item(),
-                "frobenius_loss": frobenius_loss.item(),
                 "total_loss": total_loss.item(),
-                "frobenius_weight": self.args.frobenius_weight,
-                "mse_loss": mse_loss.item(),
+                "kl_loss": kl_loss.item(),
+                "kl_weight": self.args.kl_weight,
             }
         )
 

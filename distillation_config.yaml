@@ -24,7 +24,7 @@ ce_weight: 0.4
 final_ce_weight: 0.4
 ce_schedule: "no-op"
 
-kl_weight: 0.2
+kl_weight: 0.8
 final_kl_weight: 0.2
 kl_schedule: "no-op"
 
@@ -65,5 +65,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/fro-only-distil-xlstm"
+hub_model_id: "thiomajid/kl-only-distil-xlstm"
 remove_unused_columns: false
