@@ -39,7 +39,7 @@ temperature_schedule: "no-op"
 
 # HF TrainerArguments arguments
 num_train_epochs: 5
-gradient_accumulation_steps: 8
+gradient_accumulation_steps: 5
 per_device_train_batch_size: 4
 per_device_eval_batch_size: 4
 
