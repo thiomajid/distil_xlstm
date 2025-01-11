@@ -24,13 +24,13 @@ ce_weight: 0.4
 final_ce_weight: 0.4
 ce_schedule: "no-op"
 
-kl_weight: 0.8
+kl_weight: 0.2
 final_kl_weight: 0.2
 kl_schedule: "no-op"
 
 frobenius_weight: 0.4
 final_frobenius_weight: 0.2
-frobenius_schedule: "decreasing"
+frobenius_schedule: "no-op"
 
 # Temperature args
 temperature: 2
@@ -65,5 +65,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/kl-only-distil-xlstm"
+hub_model_id: "thiomajid/mixture-only-distil-xlstm"
 remove_unused_columns: false

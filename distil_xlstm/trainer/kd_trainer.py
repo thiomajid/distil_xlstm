@@ -77,25 +77,24 @@ class KDTrainer(Trainer):
         kl_loss_term = self.args.kl_weight * scaled_temperature * kl_loss
 
         # Compute Frobenius loss
-        # frobenius_loss: torch.Tensor = self.frobenius_loss(
-        #     teacher_hidden_state=teacher_output.hidden_states,
-        #     student_hidden_state=student_output.hidden_states,
-        # )
+        frobenius_loss: torch.Tensor = self.frobenius_loss(
+            teacher_hidden_state=teacher_output.hidden_states,
+            student_hidden_state=student_output.hidden_states,
+        )
 
-        # frobenius_loss_term = self.args.frobenius_weight * frobenius_loss
+        frobenius_loss_term = self.args.frobenius_weight * frobenius_loss
 
         ce_loss = student_output.loss
-        ce_loss_term = (1 - self.args.kl_weight) * ce_loss
+        ce_loss_term = self.args.ce_weight * ce_loss
 
-        total_loss = ce_loss_term + kl_loss_term
+        total_loss = ce_loss_term + kl_loss_term + frobenius_loss_term
 
         self.log(
             {
                 "ce_loss": ce_loss.item(),
-                "total_loss": total_loss.item(),
                 "kl_loss": kl_loss.item(),
-                "kl_weight": self.args.kl_weight,
-                "temperature": self.args.temperature,
+                "frobenius_loss": frobenius_loss.item(),
+                "total_loss": total_loss.item(),
             }
         )
 
