@@ -95,6 +95,7 @@ class KDTrainer(Trainer):
                 "total_loss": total_loss.item(),
                 "kl_loss": kl_loss.item(),
                 "kl_weight": self.args.kl_weight,
+                "temperature": self.args.temperature,
             }
         )
 
