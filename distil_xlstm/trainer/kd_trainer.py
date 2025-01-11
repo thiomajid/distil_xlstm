@@ -2,6 +2,7 @@ from functools import partial
 
 import torch
 import torch.nn.functional as F
+from einops import rearrange
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -87,12 +88,25 @@ class KDTrainer(Trainer):
 
         total_loss = ce_loss_term + frobenius_loss_term
 
+        # Compute MSE loss between the hidden states of the teacher and student
+        avg_teacher = rearrange(
+            teacher_output.hidden_states.detach(),
+            "(n b) s d -> b n s d",
+            b=student_output.hidden_states.shape[0],
+        ).mean(dim=1)
+
+        mse_loss = F.mse_loss(
+            student_output.hidden_states.detach(),
+            avg_teacher,
+        )
+
         self.log(
             {
                 "ce_loss": ce_loss.item(),
                 "frobenius_loss": frobenius_loss.item(),
                 "total_loss": total_loss.item(),
                 "frobenius_weight": self.args.frobenius_weight,
+                "mse_loss": mse_loss.item(),
             }
         )
 
