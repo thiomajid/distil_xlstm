@@ -119,13 +119,9 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_dict["embedding_dim"] = teacher_config.hidden_size
 
         if v2:
-            xlstm_config_dict["num_blocks"] = teacher_config.num_hidden_layers // 2
-            xlstm_config_dict["slstm_at"] = list(
-                range(0, teacher_config.num_hidden_layers - 1, 2)
-            )
-
-            # [0,1,2,3,4,5] => range(0, 6, 1)
-            # write a range that will generate [0, 2, 4] but whose
+            num_blocks = teacher_config.num_hidden_layers // 2
+            xlstm_config_dict["num_blocks"] = num_blocks
+            xlstm_config_dict["slstm_at"] = list(range(0, num_blocks - 1, 2))
 
             teacher_num_heads = teacher_config.num_attention_heads
             while teacher_num_heads % 4 == 0:
