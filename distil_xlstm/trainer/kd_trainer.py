@@ -90,7 +90,7 @@ class KDTrainer(Trainer):
 
         # Compute MSE loss between the hidden states of the teacher and student
         avg_teacher = rearrange(
-            teacher_output.hidden_states.detach(),
+            torch.cat(teacher_output.hidden_states.detach(), dim=0),
             "(n b) s d -> b n s d",
             b=student_output.hidden_states.shape[0],
         ).mean(dim=1)
