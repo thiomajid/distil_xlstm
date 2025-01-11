@@ -1,14 +1,14 @@
 # Custom training arguments
-teacher_name: "Qwen/Qwen2.5-0.5B-Instruct"
-quantize_teacher: true
+teacher_name: "HuggingFaceTB/SmolLM-135M"
+quantize_teacher: false
 xlstm_config_path: "./xlstm_config.yaml"
-dataset_url: "HuggingFaceFW/fineweb"
+dataset_url: "HuggingFaceTB/smollm-corpus"
 
-train_subset: "default"
+train_subset: "cosmopedia-v2"
 train_split: "train"
 train_samples: 2000
 
-eval_subset: "CC-MAIN-2018-43"
+eval_subset: "fineweb-edu-dedup"
 eval_split: "train"
 eval_samples: 250
 features: ["text"]
@@ -28,7 +28,7 @@ kl_weight: 0.2
 final_kl_weight: 0.2
 kl_schedule: "no-op"
 
-frobenius_weight: 0.8
+frobenius_weight: 0.4
 final_frobenius_weight: 0.2
 frobenius_schedule: "no-op"
 
@@ -38,8 +38,8 @@ final_temperature: 0.7
 temperature_schedule: "no-op"
 
 # HF TrainerArguments arguments
-num_train_epochs: 10
-gradient_accumulation_steps: 2
+num_train_epochs: 5
+gradient_accumulation_steps: 4
 per_device_train_batch_size: 4
 per_device_eval_batch_size: 4
 
