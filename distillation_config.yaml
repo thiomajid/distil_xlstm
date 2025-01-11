@@ -65,5 +65,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/mixture-only-distil-xlstm"
+hub_model_id: "thiomajid/mixture-only-distil-xlstm-v2"
 remove_unused_columns: false
