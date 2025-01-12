@@ -98,6 +98,7 @@ class KDTrainer(Trainer):
                 "total_loss": total_loss.item(),
                 "frobenius_weight": self.args.frobenius_weight,
                 "ce_weight": ce_weight,
+                "kl_weight": self.args.kl_weight,
             }
         )
 
