@@ -85,7 +85,8 @@ class KDTrainer(Trainer):
         frobenius_loss_term = self.args.frobenius_weight * frobenius_loss
 
         ce_loss = student_output.loss
-        ce_loss_term = self.args.ce_weight * ce_loss
+        ce_weight = 1 - self.args.kl_weight - self.args.frobenius_weight
+        ce_loss_term = ce_weight * ce_loss
 
         total_loss = ce_loss_term + kl_loss_term + frobenius_loss_term
 
@@ -95,6 +96,8 @@ class KDTrainer(Trainer):
                 "kl_loss": kl_loss.item(),
                 "frobenius_loss": frobenius_loss.item(),
                 "total_loss": total_loss.item(),
+                "frobenius_weight": self.args.frobenius_weight,
+                "ce_weight": ce_weight,
             }
         )
 
