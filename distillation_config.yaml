@@ -16,10 +16,6 @@ features: ["text"]
 # Loss terms weights
 delta: 0.025
 
-alpha: 0.5
-final_alpha: 0.5
-alpha_schedule: "no-op"
-
 ce_weight: 0.6
 final_ce_weight: 0.4
 ce_schedule: "increasing"
@@ -39,9 +35,9 @@ temperature_schedule: "decreasing"
 
 # HF TrainerArguments arguments
 num_train_epochs: 2
-gradient_accumulation_steps: 5
-per_device_train_batch_size: 4
-per_device_eval_batch_size: 4
+gradient_accumulation_steps: 4
+per_device_train_batch_size: 8
+per_device_eval_batch_size: 8
 
 learning_rate: 0.0002
 # weight_decay: 0.001
@@ -65,5 +61,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/varying-mixture-only-distil-xlstm-v2"
+hub_model_id: "thiomajid/varying-mixture-only-distil-xlstm"
 remove_unused_columns: false

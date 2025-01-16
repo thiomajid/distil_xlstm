@@ -106,7 +106,7 @@ class DistilxLSTM(PreTrainedModel):
         tokenizer: AutoTokenizer,
         xlstm_config_path: str,
         return_xlstm_config: bool = False,
-        v2: bool = False,
+        v2: bool = True,
     ):
         # freezing the teacher
         for param in teacher_model.parameters():
@@ -150,7 +150,7 @@ class DistilxLSTM(PreTrainedModel):
         teacher_model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
         xlstm_config_path: str,
-        v2: bool = False,
+        v2: bool = True,
     ) -> "DistilxLSTM":
         model, config = DistilxLSTM.init_for_distillation(
             teacher_model=teacher_model,

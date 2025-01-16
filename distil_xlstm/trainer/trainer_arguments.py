@@ -41,14 +41,6 @@ class KDArguments(TrainingArguments):
         },
     )
 
-    alpha: float = field(
-        default=0.8,
-        metadata={"help": "$\alpha$ term weighing the loss function terms"},
-    )
-
-    final_alpha: float = field(default=0.5)
-    alpha_schedule: ParamScheduleType = "decreasing"
-
     ce_weight: float = field(
         default=0.4,
         metadata={"help": "Weight of the cross-entropy loss"},
