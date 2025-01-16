@@ -3,6 +3,7 @@ teacher_name: "Qwen/Qwen2.5-1.5B-Instruct"
 quantize_teacher: true
 xlstm_config_path: "./xlstm_config.yaml"
 dataset_url: "HuggingFaceFW/fineweb"
+v2_init: true
 
 train_subset: "default"
 train_split: "train"

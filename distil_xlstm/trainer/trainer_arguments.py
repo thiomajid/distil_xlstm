@@ -20,6 +20,11 @@ class KDArguments(TrainingArguments):
     eval_samples: int = field(default=5_000)
     eval_split: str = field(default="validation")
 
+    v2_init: bool = field(
+        default=True,
+        metadata={"help": "Whether to initialize the model using the v2 heuristic"},
+    )
+
     teacher_name: str = field(
         default="Qwen/Qwen2.5-1.5B-Instruct",
         metadata={"help": "Name of the model used as teacher model on Hugging Face"},
