@@ -63,6 +63,8 @@ class ScalarAnnealingScheduler:
 
         self.step = 0
 
+        return self.initial_value
+
     def update(self):
         """
         Update the current scheduling value based on the selected annealing function.

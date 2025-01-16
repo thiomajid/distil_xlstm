@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Optional
 
 import safetensors
-import safetensors.torch
 import torch
 import torch.nn.functional as F
 import yaml
@@ -107,6 +106,7 @@ class DistilxLSTM(PreTrainedModel):
         tokenizer: AutoTokenizer,
         xlstm_config_path: str,
         return_xlstm_config: bool = False,
+        v2: bool = True,
     ):
         # freezing the teacher
         for param in teacher_model.parameters():
@@ -117,6 +117,18 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_dict = yaml.safe_load(file)
             xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
             xlstm_config_dict["embedding_dim"] = teacher_config.hidden_size
+
+        if v2:
+            num_blocks = teacher_config.num_hidden_layers // 2
+            xlstm_config_dict["num_blocks"] = num_blocks
+            xlstm_config_dict["slstm_at"] = list(range(0, num_blocks - 1, 2))
+
+            teacher_num_heads = teacher_config.num_attention_heads
+            while teacher_num_heads % 4 == 0:
+                teacher_num_heads += 1
+
+            xlstm_config_dict["mlstm_block"]["mlstm"]["num_heads"] = teacher_num_heads
+            xlstm_config_dict["slstm_block"]["slstm"]["num_heads"] = teacher_num_heads
 
         parsed_config = DistilxLSTMConfig.parse_xlstm_config_dict(
             copy.deepcopy(xlstm_config_dict)
@@ -138,12 +150,14 @@ class DistilxLSTM(PreTrainedModel):
         teacher_model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
         xlstm_config_path: str,
+        v2: bool = True,
     ) -> "DistilxLSTM":
         model, config = DistilxLSTM.init_for_distillation(
             teacher_model=teacher_model,
             tokenizer=tokenizer,
             xlstm_config_path=xlstm_config_path,
             return_xlstm_config=True,
+            v2=v2,
         )
 
         model = model.to(teacher_model.device)

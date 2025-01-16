@@ -35,19 +35,35 @@ class KDArguments(TrainingArguments):
     )
 
     delta: float = field(
-        default=0.09,
+        default=0.01,
         metadata={
             "help": "$\Delta$ rescales the temperature and alpha at the start of each epoch"
         },
     )
 
-    alpha: float = field(
-        default=0.8,
-        metadata={"help": "$\alpha$ term weighing the loss function terms"},
+    ce_weight: float = field(
+        default=0.4,
+        metadata={"help": "Weight of the cross-entropy loss"},
     )
 
-    final_alpha: float = field(default=0.5)
-    alpha_schedule: ParamScheduleType = "decreasing"
+    final_ce_weight: float = field(default=0.4)
+    ce_schedule: ParamScheduleType = "decreasing"
+
+    kl_weight: float = field(
+        default=0.2,
+        metadata={"help": "Weight of the KL divergence loss"},
+    )
+
+    final_kl_weight: float = field(default=0.1)
+    kl_schedule: ParamScheduleType = "decreasing"
+
+    frobenius_weight: float = field(
+        default=0.4,
+        metadata={"help": "Weight of the Frobenius norm loss"},
+    )
+
+    final_frobenius_weight: float = field(default=0.5)
+    frobenius_schedule: ParamScheduleType = "decreasing"
 
     temperature: float = field(
         default=2,
