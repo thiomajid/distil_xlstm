@@ -124,7 +124,7 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_dict["slstm_at"] = list(range(0, num_blocks - 1, 2))
 
             teacher_num_heads = teacher_config.num_attention_heads
-            while teacher_num_heads % 4 == 0:
+            while teacher_num_heads % 4 != 0:
                 teacher_num_heads += 1
 
             xlstm_config_dict["mlstm_block"]["mlstm"]["num_heads"] = teacher_num_heads
