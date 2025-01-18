@@ -9,6 +9,7 @@ import yaml
 from einops import rearrange
 from torch import nn
 from transformers import (
+    AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     PreTrainedModel,
@@ -102,17 +103,12 @@ class DistilxLSTM(PreTrainedModel):
     @staticmethod
     def init_for_distillation(
         *,
-        teacher_model: AutoModelForCausalLM,
+        teacher_config: AutoConfig,
         tokenizer: AutoTokenizer,
         xlstm_config_path: str,
         return_xlstm_config: bool = False,
         v2: bool = True,
     ):
-        # freezing the teacher
-        for param in teacher_model.parameters():
-            param.requires_grad_(False)
-
-        teacher_config = teacher_model.config
         with open(xlstm_config_path, "r") as file:
             xlstm_config_dict = yaml.safe_load(file)
             xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
@@ -153,7 +149,7 @@ class DistilxLSTM(PreTrainedModel):
         v2: bool = True,
     ) -> "DistilxLSTM":
         model, config = DistilxLSTM.init_for_distillation(
-            teacher_model=teacher_model,
+            teacher_config=teacher_model.config,
             tokenizer=tokenizer,
             xlstm_config_path=xlstm_config_path,
             return_xlstm_config=True,
