@@ -1,8 +1,10 @@
 import math
+from typing import Literal
 
 import torch
-from einops import rearrange
 from torch import nn
+
+FrobeniusNormComputation = Literal["average", "ratio"]
 
 
 class FrobeniusLoss(nn.Module):
@@ -44,29 +46,53 @@ class FrobeniusLoss(nn.Module):
         self,
         teacher_hidden_state: torch.Tensor,
         student_hidden_state: torch.Tensor,
+        computation: FrobeniusNormComputation = "ratio",
     ):
         if isinstance(teacher_hidden_state, tuple):
             teacher_hidden_state = torch.cat(teacher_hidden_state, dim=0)
 
-        batch_size = student_hidden_state.shape[0]
+        if computation == "ratio":
+            n_layers, batch_size, sequence_length, d_model = student_hidden_state.shape
+            n_teacher_layers = teacher_hidden_state.shape[0]
 
-        teacher_hidden_state = rearrange(
-            teacher_hidden_state,
-            "(n b) s d -> b n s d",
-            b=batch_size,
-        )
+            step_size = n_teacher_layers // n_layers
 
-        # layer-wise average of teacher hidden states
-        # (batch_size, num_layers, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
-        avg_teacher_hidden_state = teacher_hidden_state.mean(dim=1)
-
-        if student_hidden_state.shape != avg_teacher_hidden_state.shape:
-            raise ValueError(
-                f"Shape mismatch: student hidden state has shape {student_hidden_state.shape}, "
-                f"but averaged teacher hidden state has shape {avg_teacher_hidden_state.shape}."
+            frobenius_norms = torch.empty_like(
+                student_hidden_state, device=student_hidden_state.device
             )
 
-        norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro")
+            for idx in range(n_layers):
+                target_representation = teacher_hidden_state[
+                    idx * step_size : (idx + 1) * step_size
+                ]
+
+                target_representation = target_representation.mean(dim=0)
+
+                if student_hidden_state.shape != target_representation.shape:
+                    raise ValueError(
+                        f"Shape mismatch: student hidden state has shape {student_hidden_state.shape}, "
+                        f"but averaged teacher hidden state has shape {target_representation.shape}."
+                    )
+
+                frobenius_norm = torch.norm(
+                    target_representation - student_hidden_state[idx],
+                    p="fro",
+                )
+                frobenius_norms[idx] = frobenius_norm
+
+            norm = frobenius_norms.mean(dim=0)
+        else:
+            # layer-wise average of teacher hidden states
+            # (num_layers, batch_size, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
+            avg_teacher_hidden_state = teacher_hidden_state.mean(dim=0)
+
+            if student_hidden_state.shape != avg_teacher_hidden_state.shape:
+                raise ValueError(
+                    f"Shape mismatch: student hidden state has shape {student_hidden_state.shape}, "
+                    f"but averaged teacher hidden state has shape {avg_teacher_hidden_state.shape}."
+                )
+
+            norm = torch.norm(avg_teacher_hidden_state - student_hidden_state, p="fro")
 
         # normalize by \sqrt{num_elements} prevents the loss from being too
         # large or too small especially for large tensors

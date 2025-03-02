@@ -3,6 +3,8 @@ from typing import Optional
 
 from transformers import TrainingArguments
 
+from distil_xlstm.optim.loss import FrobeniusNormComputation
+
 from ..optim.scheduler import ParamScheduleType
 
 
@@ -83,3 +85,17 @@ class KDArguments(TrainingArguments):
     )
 
     temperature_schedule: ParamScheduleType = "decreasing"
+
+    frobenius_norm_computation: FrobeniusNormComputation = field(
+        default="ratio",
+        metadata={
+            "help": "Method of computing the Frobenius norm: 'average' for average loss, 'ratio' for ratio-based loss"
+        },
+    )
+
+    compute_frobenius_loss: bool = field(
+        default=True,
+        metadata={"help": "Whether to use the Frobenius norm loss during training"},
+    )
+
+    compute_kl_loss: bool = field(default=True)
