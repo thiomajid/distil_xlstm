@@ -99,3 +99,8 @@ class KDArguments(TrainingArguments):
     )
 
     compute_kl_loss: bool = field(default=True)
+
+
+class DualGpuTraingArgs(KDArguments):
+    student_device: int = field(default=0)
+    teacher_device: int = field(default=1)

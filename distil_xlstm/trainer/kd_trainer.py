@@ -8,7 +8,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from distil_xlstm.modeling import DistilxLSTM
 from distil_xlstm.optim.loss import FrobeniusLoss
-from distil_xlstm.trainer.trainer_arguments import KDArguments
+from distil_xlstm.trainer.arguments import KDArguments
 
 
 class KDTrainer(Trainer):
