@@ -50,7 +50,7 @@ warmup_ratio: 0.1
 optim: "adamw_torch_fused"
 lr_scheduler_type: "cosine"
 torch_compile: false
-fp16: false
+fp16: true
 use_cpu: false
 gradient_checkpointing: false
 
