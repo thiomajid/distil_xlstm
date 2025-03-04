@@ -40,9 +40,9 @@ compute_kl_loss: true
 
 # HF TrainerArguments arguments
 num_train_epochs: 2
-gradient_accumulation_steps: 3
-per_device_train_batch_size: 6
-per_device_eval_batch_size: 6
+gradient_accumulation_steps: 2
+per_device_train_batch_size: 8
+per_device_eval_batch_size: 8
 
 learning_rate: 0.0002
 # weight_decay: 0.001
