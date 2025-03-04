@@ -15,13 +15,25 @@ def get_dataset(
     tokenizer: AutoTokenizer,
     split: str,
     n_samples: Union[int, Literal["all"]] = "all",
+    token=None,
 ):
     data_stream: Optional[IterableDataset] = None
 
     if subset is not None:
-        data_stream = load_dataset(hub_url, subset, split=split, streaming=True)
+        data_stream = load_dataset(
+            hub_url,
+            subset,
+            split=split,
+            token=token,
+            streaming=True,
+        )
     else:
-        data_stream = load_dataset(hub_url, split=split, streaming=True)
+        data_stream = load_dataset(
+            hub_url,
+            split=split,
+            token=token,
+            streaming=True,
+        )
 
     data_points = []
 
