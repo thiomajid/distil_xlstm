@@ -69,16 +69,17 @@ class DistilxLSTM(PreTrainedModel):
         hidden_states = self.token_embedding(input_ids)
         hidden_states = self.embedding_dropout(hidden_states)
 
-        hidden_states_per_block: torch.Tensor | None = None
+        hidden_states_per_block = torch.empty(
+            size=(
+                self.config.xlstm_cfg.num_blocks,
+                hidden_states.size(0),
+                hidden_states.size(2),
+            ),
+            device=hidden_states.device,
+            dtype=hidden_states.dtype,
+        )
+        
         if frobenius_computation == "ratio":
-            hidden_states_per_block = torch.empty(
-                size=(
-                    self.config.xlstm_cfg.num_blocks,
-                    hidden_states.size(0),
-                    hidden_states.size(2),
-                )
-            )
-
             for idx, block in enumerate(self.xlstm_block_stack.blocks):
                 hidden_states_per_block[idx] = block(hidden_states)
 
