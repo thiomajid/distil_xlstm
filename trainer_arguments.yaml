@@ -1,6 +1,6 @@
 # Custom training arguments
-teacher_name: "HuggingFaceTB/SmolLM2-1.7B-Instruct"
-quantize_teacher: true
+teacher_name: "HuggingFaceTB/SmolLM2-360M-Instruct"
+quantize_teacher: false
 xlstm_config_path: "./model_config.yaml"
 dataset_url: "HuggingFaceFW/fineweb"
 v2_init: true
