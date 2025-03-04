@@ -14,7 +14,6 @@ from transformers import (
     AutoTokenizer,
     PreTrainedModel,
 )
-from transformers.modeling_outputs import CausalLMOutputWithPast
 from xlstm import xLSTMBlockStack
 
 from distil_xlstm.config import DistilxLSTMConfig
@@ -66,7 +65,7 @@ class DistilxLSTM(PreTrainedModel):
         labels: Optional[torch.Tensor] = None,
         frobenius_computation: Optional[FrobeniusNormComputation] = None,
         **kwargs,
-    ) -> CausalLMOutputWithPast:
+    ):
         hidden_states = self.token_embedding(input_ids)
         hidden_states = self.embedding_dropout(hidden_states)
 

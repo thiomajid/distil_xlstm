@@ -1,4 +1,5 @@
 import subprocess
+from dataclasses import dataclass
 from typing import Optional
 
 import torch
@@ -6,6 +7,7 @@ from torch import nn
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
+@dataclass
 class xLSTMCausalLMOutput(CausalLMOutputWithPast):
     hidden_states_per_block: Optional[torch.Tensor] = None
 
