@@ -9,6 +9,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from distil_xlstm.modeling import DistilxLSTM
 from distil_xlstm.optim.loss import FrobeniusLoss
 from distil_xlstm.trainer.arguments import KDArguments
+from distil_xlstm.utils import xLSTMCausalLMOutput
 
 
 class KDTrainer(Trainer):
@@ -39,7 +40,7 @@ class KDTrainer(Trainer):
         return output
 
     def compute_loss(self, model: DistilxLSTM, inputs, return_outputs=False, **kwargs):
-        student_output: CausalLMOutputWithPast = model(
+        student_output: xLSTMCausalLMOutput = model(
             **inputs,
             output_hidden_states=True,
         )
@@ -82,9 +83,15 @@ class KDTrainer(Trainer):
 
         # # Compute Frobenius loss
         if self.args.compute_frobenius_loss:
+            student_h = (
+                student_output.hidden_states_per_block
+                if self.args.frobenius_norm_computation == "ratio"
+                else student_output.hidden_states
+            )
+
             frobenius_loss = self.frobenius_criterion(
                 teacher_hidden_state=teacher_output.hidden_states,
-                student_hidden_state=student_output.hidden_states,
+                student_hidden_state=student_h,
                 computation=self.args.frobenius_norm_computation,
             )
 

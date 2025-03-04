@@ -1,6 +1,13 @@
 import subprocess
+from typing import Optional
 
+import torch
 from torch import nn
+from transformers.modeling_outputs import CausalLMOutputWithPast
+
+
+class xLSTMCausalLMOutput(CausalLMOutputWithPast):
+    hidden_states_per_block: Optional[torch.Tensor] = None
 
 
 def count_parameters(model: nn.Module):

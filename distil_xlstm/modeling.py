@@ -18,7 +18,12 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from xlstm import xLSTMBlockStack
 
 from distil_xlstm.config import DistilxLSTMConfig
-from distil_xlstm.utils import count_parameters, count_trainable_parameters
+from distil_xlstm.optim.loss import FrobeniusNormComputation
+from distil_xlstm.utils import (
+    count_parameters,
+    count_trainable_parameters,
+    xLSTMCausalLMOutput,
+)
 
 
 class DistilxLSTM(PreTrainedModel):
@@ -59,20 +64,33 @@ class DistilxLSTM(PreTrainedModel):
         self,
         input_ids: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.Tensor] = None,
+        frobenius_computation: Optional[FrobeniusNormComputation] = None,
         **kwargs,
     ) -> CausalLMOutputWithPast:
-        input_ids = self.token_embedding(input_ids)
+        hidden_states = self.token_embedding(input_ids)
+        hidden_states = self.embedding_dropout(hidden_states)
 
-        if attention_mask is not None:
-            attention_mask = attention_mask.unsqueeze(-1)
-            input_ids = input_ids * attention_mask
+        hidden_states_per_block: torch.Tensor | None = None
+        if frobenius_computation == "ratio":
+            hidden_states_per_block = torch.empty(
+                size=(
+                    self.config.xlstm_cfg.num_blocks,
+                    hidden_states.size(0),
+                    hidden_states.size(2),
+                )
+            )
 
-        hidden_state = self.embedding_dropout(input_ids)
-        hidden_state = self.xlstm_block_stack(input_ids)
-        logits: torch.Tensor = self.lm_head(hidden_state)
+            for idx, block in enumerate(self.xlstm_block_stack.blocks):
+                hidden_states_per_block[idx] = block(hidden_states)
+
+            last_hidden_state = self.xlstm_block_stack.post_blocks_norm(
+                hidden_states_per_block[-1]
+            )
+
+            hidden_states = last_hidden_state
+
+        hidden_states = self.xlstm_block_stack(hidden_states)
+        logits: torch.Tensor = self.lm_head(hidden_states)
 
         loss = None
         if labels is not None:
@@ -93,11 +111,11 @@ class DistilxLSTM(PreTrainedModel):
                 # ignore_index=self.config.pad_token_id,
             )
 
-        return CausalLMOutputWithPast(
+        return xLSTMCausalLMOutput(
             logits=logits,
             loss=loss,
-            hidden_states=hidden_state,
-            attentions=None,
+            hidden_states=hidden_states,
+            hidden_states_per_block=hidden_states_per_block,
         )
 
     @staticmethod

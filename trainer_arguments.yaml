@@ -47,7 +47,7 @@ per_device_eval_batch_size: 8
 learning_rate: 0.0002
 # weight_decay: 0.001
 warmup_ratio: 0.1
-optim: "adamw_torch"
+optim: "adamw_torch_fused"
 lr_scheduler_type: "cosine"
 torch_compile: true
 fp16: true
@@ -66,5 +66,5 @@ eval_strategy: "steps"
 
 push_to_hub: true
 resume_from_checkpoint: "artifacts"
-hub_model_id: "thiomajid/distil-xlstm-v2"
+hub_model_id: "thiomajid/distil_ratio"
 remove_unused_columns: false

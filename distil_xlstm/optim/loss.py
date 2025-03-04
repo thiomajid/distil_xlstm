@@ -52,7 +52,7 @@ class FrobeniusLoss(nn.Module):
             teacher_hidden_state = torch.cat(teacher_hidden_state, dim=0)
 
         if computation == "ratio":
-            n_layers, batch_size, sequence_length, d_model = student_hidden_state.shape
+            n_layers = student_hidden_state.shape[0]
             n_teacher_layers = teacher_hidden_state.shape[0]
 
             step_size = n_teacher_layers // n_layers
@@ -68,9 +68,9 @@ class FrobeniusLoss(nn.Module):
 
                 target_representation = target_representation.mean(dim=0)
 
-                if student_hidden_state.shape != target_representation.shape:
+                if student_hidden_state[idx].shape != target_representation.shape:
                     raise ValueError(
-                        f"Shape mismatch: student hidden state has shape {student_hidden_state.shape}, "
+                        f"Shape mismatch: student hidden state has shape {student_hidden_state[idx].shape}, "
                         f"but averaged teacher hidden state has shape {target_representation.shape}."
                     )
 
@@ -78,6 +78,7 @@ class FrobeniusLoss(nn.Module):
                     target_representation - student_hidden_state[idx],
                     p="fro",
                 )
+
                 frobenius_norms[idx] = frobenius_norm
 
             norm = frobenius_norms.mean(dim=0)
