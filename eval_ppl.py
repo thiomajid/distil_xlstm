@@ -3,6 +3,7 @@ import hashlib
 import json
 import math
 import os
+import time
 
 import torch
 from datasets import load_from_disk
@@ -274,7 +275,7 @@ def main():
     # Load model and tokenizer
     model, tokenizer = load_model(args)
     print(f"Model loaded successfully. Model type: {args.model_type}")
-    print(count_parameters(model))
+    print(f"Parameter count: {count_parameters(model):,}")
 
     # Load cached dataset or download if not available
     eval_data = get_cached_dataset(args, tokenizer)
@@ -283,14 +284,25 @@ def main():
     eval_data.set_format("torch", columns=["input_ids", "attention_mask", "length"])
     print(f"Dataset ready. Number of samples: {len(eval_data)}")
 
+    # Start timing the evaluation using perf_counter for better precision
+    start_time = time.perf_counter()
+
     # Evaluate perplexity
     results = evaluate_perplexity(
         model=model, dataset=eval_data, batch_size=args.batch_size, device=args.device
     )
 
-    # Add metadata to results
+    # End timing
+    end_time = time.perf_counter()
+    eval_seconds = end_time - start_time
+    eval_minutes = eval_seconds / 60
+
+    # Add timing to results
     results.update(
         {
+            "evaluation_time_seconds": eval_seconds,
+            "evaluation_time_minutes": eval_minutes,
+            "tokens_per_second": results["total_tokens_evaluated"] / eval_seconds,
             "model_type": args.model_type,
             "model_path": args.model_path,
             "dataset": args.dataset_url,
@@ -318,6 +330,10 @@ def main():
     print(f"Results saved to {args.output_file}")
     print(f"CE Loss: {results['ce_loss']:.4f}")
     print(f"Perplexity: {results['perplexity']:.4f}")
+    print(
+        f"Evaluation time: {int(eval_minutes)}m {int(eval_seconds % 60)}s ({eval_seconds:.2f}s)"
+    )
+    print(f"Throughput: {results['tokens_per_second']:.2f} tokens/second")
 
 
 if __name__ == "__main__":
