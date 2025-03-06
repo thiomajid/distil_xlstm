@@ -275,7 +275,7 @@ def main():
     # Load model and tokenizer
     model, tokenizer = load_model(args)
     print(f"Model loaded successfully. Model type: {args.model_type}")
-    print(f"Parameter count: {count_parameters(model):,}")
+    print(f"Parameter count: {count_parameters(model)}")
 
     # Load cached dataset or download if not available
     eval_data = get_cached_dataset(args, tokenizer)
