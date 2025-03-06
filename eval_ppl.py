@@ -291,7 +291,6 @@ def main():
     # Add metadata to results
     results.update(
         {
-            "hf_repo": args.hf_repo,
             "model_type": args.model_type,
             "model_path": args.model_path,
             "dataset": args.dataset_url,
