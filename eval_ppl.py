@@ -167,11 +167,19 @@ def evaluate_perplexity(model, dataset, batch_size, device):
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Evaluating"):
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch.get("attention_mask", None)
+            # Convert lists to tensors if needed
+            if isinstance(batch["input_ids"], list):
+                input_ids = torch.tensor(batch["input_ids"]).to(device)
+            else:
+                input_ids = batch["input_ids"].to(device)
 
+            # Handle attention mask if available
+            attention_mask = batch.get("attention_mask", None)
             if attention_mask is not None:
-                attention_mask = attention_mask.to(device)
+                if isinstance(attention_mask, list):
+                    attention_mask = torch.tensor(attention_mask).to(device)
+                else:
+                    attention_mask = attention_mask.to(device)
 
             # Forward pass
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -224,7 +232,9 @@ def main():
     # Load dataset
     print(
         f"Loading dataset: {args.dataset_url} (subset: {args.dataset_subset or 'None'})"
+        f" (split: {args.split}) (samples: {args.samples})"
     )
+
     dataset = get_dataset(
         hub_url=args.dataset_url,
         subset=args.dataset_subset,
