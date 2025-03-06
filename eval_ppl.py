@@ -1,9 +1,11 @@
 import argparse
+import hashlib
 import json
 import math
 import os
 
 import torch
+from datasets import load_from_disk
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -221,21 +223,35 @@ def evaluate_perplexity(model, dataset, batch_size, device):
     }
 
 
-def main():
-    args = parse_args()
+# Add function to get cached or fresh dataset
+def get_cached_dataset(args, tokenizer):
+    # Create cache directory
+    cache_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "dataset_cache"
+    )
+    os.makedirs(cache_dir, exist_ok=True)
 
-    # Load model and tokenizer
-    model, tokenizer = load_model(args)
-    print(f"Model loaded successfully. Model type: {args.model_type}")
-    print(count_parameters(model))
+    # Create a unique cache ID based on dataset parameters
+    cache_id = f"{args.dataset_url}_{args.dataset_subset or 'none'}_{args.split}"
+    cache_id += f"_{args.max_seq_length}_{tokenizer.name_or_path.replace('/', '_')}"
+    cache_id += f"_{args.samples}_{'_'.join(args.features)}"
+    # Hash the ID to ensure valid filename
+    cache_id = hashlib.md5(cache_id.encode()).hexdigest()
 
-    # Load dataset
+    cache_path = os.path.join(cache_dir, cache_id)
+
+    # Check if cached dataset exists
+    if os.path.exists(cache_path):
+        print(f"Loading cached dataset from {cache_path}")
+        return load_from_disk(cache_path)
+
+    # Otherwise download and process
     print(
-        f"Loading dataset: {args.dataset_url} (subset: {args.dataset_subset or 'None'})"
+        f"Downloading dataset: {args.dataset_url} (subset: {args.dataset_subset or 'None'})"
         f" (split: {args.split}) (samples: {args.samples})"
     )
 
-    dataset = get_dataset(
+    eval_data = get_dataset(
         hub_url=args.dataset_url,
         subset=args.dataset_subset,
         features=args.features,
@@ -244,11 +260,32 @@ def main():
         split=args.split,
         n_samples=args.samples,
     )
-    print(f"Dataset loaded. Number of samples: {len(dataset)}")
+
+    # Save to disk for future use
+    print(f"Saving dataset to {cache_path}")
+    eval_data.save_to_disk(cache_path)
+
+    return eval_data
+
+
+def main():
+    args = parse_args()
+
+    # Load model and tokenizer
+    model, tokenizer = load_model(args)
+    print(f"Model loaded successfully. Model type: {args.model_type}")
+    print(count_parameters(model))
+
+    # Load cached dataset or download if not available
+    eval_data = get_cached_dataset(args, tokenizer)
+
+    # Prepare for PyTorch
+    eval_data.set_format("torch", columns=["input_ids", "attention_mask", "length"])
+    print(f"Dataset ready. Number of samples: {len(eval_data)}")
 
     # Evaluate perplexity
     results = evaluate_perplexity(
-        model=model, dataset=dataset, batch_size=args.batch_size, device=args.device
+        model=model, dataset=eval_data, batch_size=args.batch_size, device=args.device
     )
 
     # Add metadata to results
@@ -259,7 +296,7 @@ def main():
             "dataset": args.dataset_url,
             "dataset_subset": args.dataset_subset,
             "split": args.split,
-            "samples_evaluated": len(dataset),
+            "samples_evaluated": len(eval_data),
             "batch_size": args.batch_size,
             "max_seq_length": args.max_seq_length,
             "device": args.device,
