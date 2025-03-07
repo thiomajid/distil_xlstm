@@ -119,10 +119,12 @@ class KDTrainer(Trainer):
                 metrics.update(norm_dict)
 
         total_loss += task_weight * task_loss
+        perplexity = torch.exp(task_loss)
         metrics.update(
             {
                 "ce_weight": task_weight,
                 "ce_loss": task_loss.item(),
+                "perplexity": perplexity.item(),
                 "total_loss": total_loss.item(),
             }
         )
