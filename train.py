@@ -468,6 +468,7 @@ def main():
     eval_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     # Model instances
+    print("Loading teacher model...")
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_compute_dtype=torch.float16,
