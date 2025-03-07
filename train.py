@@ -426,8 +426,8 @@ def main():
     if args.learning_rate is not None:
         trainer_args.learning_rate = args.learning_rate
 
-    if args.lr_scheduler_type is not None:
-        trainer_args.lr_scheduler_type = args.lr_scheduler_type
+    # if args.lr_scheduler_type is not None:
+    #     trainer_args.lr_scheduler_type = args.lr_scheduler_type
 
     # Override teacher model name if provided
     if args.teacher_name is not None:
