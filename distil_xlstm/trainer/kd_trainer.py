@@ -90,8 +90,8 @@ class KDTrainer(Trainer):
             )
 
             frobenius_loss, norm_per_block = self.frobenius_criterion(
-                teacher_hidden_state=teacher_output.hidden_states,
-                student_hidden_state=student_h,
+                teacher_hidden_states=teacher_output.hidden_states,
+                student_hidden_states=student_h,
                 computation=self.args.frobenius_norm_computation,
             )
 
