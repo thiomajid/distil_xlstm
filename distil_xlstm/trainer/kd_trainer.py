@@ -33,6 +33,7 @@ class KDTrainer(Trainer):
 
         self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
         self.frobenius_criterion = FrobeniusLoss()
+        self._teacher_num_attention_layers = len(teacher_model.model.layers)
 
     @torch.no_grad()
     def _teacher_forward(self, inputs) -> CausalLMOutputWithPast:
@@ -90,7 +91,11 @@ class KDTrainer(Trainer):
             )
 
             frobenius_loss, norm_per_block = self.frobenius_criterion(
-                teacher_hidden_states=teacher_output.hidden_states,
+                # An additional hidden state is added by the transformer library after normalization
+                # but we only care about the output of attention layers
+                teacher_hidden_states=teacher_output.hidden_states[
+                    : self._teacher_num_attention_layers
+                ],
                 student_hidden_states=student_h,
                 computation=self.args.frobenius_norm_computation,
             )
@@ -107,7 +112,7 @@ class KDTrainer(Trainer):
 
             if norm_per_block is not None:
                 norm_dict = {
-                    f"frobenius_norm/block_{idx}": norm
+                    f"frobenius_norm/block_{idx}": norm.item()
                     for idx, norm in enumerate(norm_per_block)
                 }
 
