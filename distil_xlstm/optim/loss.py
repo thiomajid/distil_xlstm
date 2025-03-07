@@ -62,7 +62,7 @@ class FrobeniusLoss(nn.Module):
             step_size = num_attention_layers // num_xlstm_blocks
 
             norm_per_block = torch.empty(
-                size=(num_xlstm_blocks),
+                num_xlstm_blocks,
                 device=student_hidden_states.device,
                 dtype=student_hidden_states.dtype,
             )
