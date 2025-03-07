@@ -65,6 +65,7 @@ class FrobeniusLoss(nn.Module):
                 num_xlstm_blocks,
                 device=student_hidden_states.device,
                 dtype=student_hidden_states.dtype,
+                requires_grad=True,
             )
 
             for idx in range(num_xlstm_blocks):
