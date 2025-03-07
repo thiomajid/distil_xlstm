@@ -478,7 +478,7 @@ def main():
 
     teacher_model = AutoModelForCausalLM.from_pretrained(
         trainer_args.teacher_name,
-        torch_dtype=torch.float16 if trainer_args.fp16 else torch.float32,
+        torch_dtype=torch.float32,
         token=trainer_args.hub_token,
         trust_remote_code=args.trust_remote_code,
         quantization_config=quantization_config
