@@ -2,6 +2,7 @@ import math
 from typing import Literal
 
 import torch
+from einops import rearrange
 from torch import nn
 
 FrobeniusNormComputation = Literal["average", "ratio"]
@@ -51,14 +52,19 @@ class FrobeniusLoss(nn.Module):
         if isinstance(teacher_hidden_states, tuple):
             teacher_hidden_states = torch.cat(teacher_hidden_states, dim=0)
 
+        batch_size = student_hidden_states.shape[0]
+        teacher_hidden_states = rearrange(
+            teacher_hidden_states,
+            "(n b) s d -> b n s d",
+            b=batch_size,
+        )
+
         norm_per_block: torch.Tensor | None = None
         if computation == "ratio":
-            # Step-wise average of teacher hidden states with step size of
-            # n_teacher_layers // n_student_layers
-            # Here student_hidden_states is of shape (num_blocks, batch_size, seq_len, hidden_size)
             num_xlstm_blocks = student_hidden_states.shape[0]
-            num_attention_layers = teacher_hidden_states.shape[0]
+            num_attention_layers = teacher_hidden_states.shape[1]
 
+            # Calculate base step size
             step_size = num_attention_layers // num_xlstm_blocks
 
             norm_per_block = torch.empty(
@@ -70,13 +76,21 @@ class FrobeniusLoss(nn.Module):
 
             for idx in range(num_xlstm_blocks):
                 student_representation = student_hidden_states[idx]
-                target_representation = teacher_hidden_states[
-                    idx * step_size : (idx + 1) * step_size
-                ]
 
-                # (num_layers, batch_size, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
-                # average over the layers
-                target_representation = target_representation.mean(dim=0)
+                # Standard case for most blocks
+                start_idx = idx * step_size
+
+                # For the last block, include all remaining layers
+                if idx == num_xlstm_blocks - 1:
+                    end_idx = num_attention_layers
+                else:
+                    end_idx = (idx + 1) * step_size
+
+                # Select teacher layers for current block
+                target_representation = teacher_hidden_states[:, start_idx:end_idx]
+
+                # Average over the step_size dimension
+                target_representation = target_representation.mean(dim=1)
 
                 if student_representation.shape != target_representation.shape:
                     raise ValueError(
@@ -94,8 +108,8 @@ class FrobeniusLoss(nn.Module):
             norm = norm_per_block.mean(dim=0)
         else:
             # layer-wise average of teacher hidden states
-            # (num_layers, batch_size, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
-            avg_teacher_hidden_state = teacher_hidden_states.mean(dim=0)
+            # (batch_size, num_layers, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
+            avg_teacher_hidden_state = teacher_hidden_states.mean(dim=1)
 
             if student_hidden_states.shape != avg_teacher_hidden_state.shape:
                 raise ValueError(

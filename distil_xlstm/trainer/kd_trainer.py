@@ -106,12 +106,12 @@ class KDTrainer(Trainer):
             )
 
             if norm_per_block is not None:
-                for idx, norm in enumerate(norm_per_block):
-                    metrics.update(
-                        {
-                            f"frobenius_norm_{idx}": norm.item(),
-                        }
-                    )
+                norm_dict = {
+                    f"frobenius_norm/block_{idx}": norm
+                    for idx, norm in enumerate(norm_per_block)
+                }
+
+                metrics.update(norm_dict)
 
         total_loss += task_weight * task_loss
         metrics.update(
