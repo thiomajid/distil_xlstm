@@ -1,7 +1,10 @@
 import argparse
+import hashlib
+import os
 from typing import cast
 
 import torch
+from datasets import load_from_disk
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -15,6 +18,54 @@ from distil_xlstm.data import get_dataset
 from distil_xlstm.optim import AnnealingCallback, ScalarAnnealingScheduler
 from distil_xlstm.trainer import KDArguments, KDTrainer
 from distil_xlstm.utils import count_parameters, count_trainable_parameters
+
+
+def get_cached_dataset(
+    hub_url, subset, features, max_seq_length, tokenizer, split, n_samples, token=None
+):
+    """Get dataset from cache if available, otherwise download and cache it"""
+    # Create cache directory
+    cache_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "dataset_cache"
+    )
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Create a unique cache ID based on dataset parameters
+    cache_id = f"{hub_url}_{subset or 'none'}_{split}"
+    cache_id += f"_{max_seq_length}_{tokenizer.name_or_path.replace('/', '_')}"
+    cache_id += f"_{n_samples}_{'_'.join(features)}"
+    # Hash the ID to ensure valid filename
+    cache_id = hashlib.md5(cache_id.encode()).hexdigest()
+
+    cache_path = os.path.join(cache_dir, cache_id)
+
+    # Check if cached dataset exists
+    if os.path.exists(cache_path):
+        print(f"Loading cached dataset from {cache_path}")
+        return load_from_disk(cache_path)
+
+    # Otherwise download and process
+    print(
+        f"Downloading dataset: {hub_url} (subset: {subset or 'None'})"
+        f" (split: {split}) (samples: {n_samples})"
+    )
+
+    dataset = get_dataset(
+        hub_url=hub_url,
+        subset=subset,
+        features=features,
+        max_seq_length=max_seq_length,
+        tokenizer=tokenizer,
+        split=split,
+        n_samples=n_samples,
+        token=token,
+    )
+
+    # Save to disk for future use
+    print(f"Saving dataset to {cache_path}")
+    dataset.save_to_disk(cache_path)
+
+    return dataset
 
 
 def register_args():
@@ -438,8 +489,8 @@ def main():
         )
 
     print(f"Loading training dataset from {trainer_args.dataset_url}...")
-    # Load training dataset
-    train_dataset = get_dataset(
+    # Load training dataset using caching
+    train_dataset = get_cached_dataset(
         hub_url=trainer_args.dataset_url,
         subset=getattr(trainer_args, "train_subset", None),
         features=trainer_args.features,
@@ -453,8 +504,8 @@ def main():
     train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     print("Loading evaluation dataset...")
-    # Load evaluation dataset
-    eval_dataset = get_dataset(
+    # Load evaluation dataset using caching
+    eval_dataset = get_cached_dataset(
         hub_url=trainer_args.dataset_url,
         subset=getattr(trainer_args, "eval_subset", None),
         features=trainer_args.features,
