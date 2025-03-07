@@ -59,6 +59,15 @@ class DistilxLSTM(PreTrainedModel):
         if config.xlstm_cfg.tie_weights:
             self.lm_head.weight = self.token_embedding.weight
 
+    def reset_parameters(self):
+        # Reset the parameters of the model
+        self.token_embedding.reset_parameters()
+        self.xlstm_block_stack.reset_parameters()
+        self.lm_head.reset_parameters()
+
+    def reset_parameters_for_distillation(self):
+        self.xlstm_block_stack.reset_parameters()
+
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -161,6 +170,7 @@ class DistilxLSTM(PreTrainedModel):
         xlstm_config.pad_token_id = tokenizer.pad_token_id
 
         model = DistilxLSTM(config=xlstm_config)
+        model.reset_parameters_for_distillation()
 
         if return_xlstm_config:
             return model, xlstm_config

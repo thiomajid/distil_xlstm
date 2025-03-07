@@ -3,6 +3,7 @@ from functools import partial
 import torch
 import torch.nn.functional as F
 from einops import rearrange
+from torch.utils.tensorboard import SummaryWriter
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
@@ -34,6 +35,10 @@ class KDTrainer(Trainer):
         self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
         self.frobenius_criterion = FrobeniusLoss()
         self._teacher_num_attention_layers = len(teacher_model.model.layers)
+
+        self.tb_writer = SummaryWriter(
+            log_dir=args.logging_dir, filename_suffix="manual_logs"
+        )
 
     @torch.no_grad()
     def _teacher_forward(self, inputs) -> CausalLMOutputWithPast:
@@ -116,7 +121,11 @@ class KDTrainer(Trainer):
                     for idx, norm in enumerate(norm_per_block)
                 }
 
-                metrics.update(norm_dict)
+                self.tb_writer.add_scalars(
+                    "frobenius_norm_per_block",
+                    norm_dict,
+                    global_step=self.state.global_step,
+                )
 
         total_loss += task_weight * task_loss
         perplexity = torch.exp(task_loss)
@@ -129,6 +138,15 @@ class KDTrainer(Trainer):
             }
         )
 
-        self.log(metrics)
+        # Log the metrics
+        for key, value in metrics.items():
+            self.tb_writer.add_scalar(
+                f"train/{key}",
+                value,
+                global_step=self.state.global_step,
+            )
 
         return (total_loss, student_output) if return_outputs else total_loss
+
+    def close(self):
+        self.tb_writer.close()
