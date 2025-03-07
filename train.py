@@ -256,7 +256,7 @@ def register_args():
     parser.add_argument(
         "--slstm-pos",
         type=int,
-        nargs="+",
+        nargs="*",
         default=None,
         help="Positions of SLSTM blocks in student model",
     )
