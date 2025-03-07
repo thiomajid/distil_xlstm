@@ -126,6 +126,7 @@ class DistilxLSTM(PreTrainedModel):
         teacher_config: AutoConfig,
         tokenizer: AutoTokenizer,
         xlstm_config_path: str,
+        max_sequence_length: int,
         return_xlstm_config: bool = False,
         slstm_pos: list[int] | None = None,
         v2: bool = True,
@@ -134,6 +135,7 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_dict = yaml.safe_load(file)
             xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
             xlstm_config_dict["embedding_dim"] = teacher_config.hidden_size
+            xlstm_config_dict["context_length"] = max_sequence_length
 
         if v2:
             num_blocks = teacher_config.num_hidden_layers // 2
@@ -171,6 +173,7 @@ class DistilxLSTM(PreTrainedModel):
         teacher_model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
         xlstm_config_path: str,
+        max_sequence_length: int,
         slstm_pos: list[int] | None = None,
         v2: bool = True,
     ) -> "DistilxLSTM":
@@ -180,6 +183,7 @@ class DistilxLSTM(PreTrainedModel):
             xlstm_config_path=xlstm_config_path,
             return_xlstm_config=True,
             slstm_pos=slstm_pos,
+            max_sequence_length=max_sequence_length,
             v2=v2,
         )
 

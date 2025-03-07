@@ -49,13 +49,13 @@ def register_args():
     )
 
     parser.add_argument(
-        "--trust_remote_code",
+        "--trust-remote-code",
         action="store_true",
         help="Trust remote code when loading models from the Hub",
     )
 
     parser.add_argument(
-        "--num_train_epochs",
+        "--num-train-epochs",
         type=int,
         default=None,
         help="Override the number of training epochs",
@@ -68,21 +68,21 @@ def register_args():
     )
 
     parser.add_argument(
-        "--gradient_accumulation_steps",
+        "--gradient-accumulation-steps",
         type=int,
         default=None,
         help="Override gradient accumulation steps",
     )
 
     parser.add_argument(
-        "--per_device_train_batch_size",
+        "--per-device-train-batch-size",
         type=int,
         default=None,
         help="Override batch size for training",
     )
 
     parser.add_argument(
-        "--per_device_eval_batch_size",
+        "--per-device-eval-batch-size",
         type=int,
         default=None,
         help="Override batch size for evaluation",
@@ -440,14 +440,14 @@ def main():
         teacher_model = teacher_model.to("cuda")
 
     print("Creating student model...")
-    # TODO! adjust slstm_pos and pass max_seq_length to model config
     # Create student model with frozen head and embedding
     student_model = DistilxLSTM.init_for_distillation_with_freezed_head_and_embedding(
         teacher_model=teacher_model,
         tokenizer=tokenizer,
         xlstm_config_path=trainer_args.xlstm_config_path,
-        v2=trainer_args.v2_init,
+        max_sequence_length=args.max_seq_length,
         slstm_pos=args.slstm_pos,  # Pass slstm_pos from args to function
+        v2=trainer_args.v2_init,
     )
 
     print("Initializing KD trainer...")
