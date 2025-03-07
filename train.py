@@ -21,7 +21,14 @@ from distil_xlstm.utils import count_parameters, count_trainable_parameters
 
 
 def get_cached_dataset(
-    hub_url, subset, features, max_seq_length, tokenizer, split, n_samples, token=None
+    hub_url,
+    subset,
+    features,
+    max_seq_length,
+    tokenizer,
+    split,
+    n_samples,
+    token=None,
 ):
     """Get dataset from cache if available, otherwise download and cache it"""
     # Create cache directory
@@ -116,6 +123,13 @@ def register_args():
         "--fp16",
         action="store_true",
         help="Use mixed precision for evaluation",
+    )
+
+    parser.add_argument(
+        "--no-fp16",
+        action="store_false",
+        dest="fp16",
+        help="Disable mixed precision for evaluation",
     )
 
     parser.add_argument(
