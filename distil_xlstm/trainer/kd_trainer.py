@@ -121,11 +121,13 @@ class KDTrainer(Trainer):
                     for idx, norm in enumerate(norm_per_block)
                 }
 
-                self.tb_writer.add_scalars(
-                    "frobenius_norm_per_block",
-                    norm_dict,
-                    global_step=self.state.global_step,
-                )
+                # Log the Frobenius norm per block
+                for key, value in norm_dict.items():
+                    self.tb_writer.add_scalar(
+                        key,
+                        value,
+                        global_step=self.state.global_step,
+                    )
 
         total_loss += task_weight * task_loss
         perplexity = torch.exp(task_loss)
