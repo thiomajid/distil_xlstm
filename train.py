@@ -427,6 +427,7 @@ def main():
     # Add padding token if needed
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+        print("Padding token set to EOS token.")
 
     # Determine max sequence length
     if args.max_seq_length is None:
@@ -506,6 +507,12 @@ def main():
         max_sequence_length=args.max_seq_length,
         slstm_pos=args.slstm_pos,  # Pass slstm_pos from args to function
         v2=trainer_args.v2_init,
+    )
+
+    print(f"Student model total parameters: {count_parameters(student_model)}")
+
+    print(
+        f"Student model trainable parameters: {count_trainable_parameters(student_model)}"
     )
 
     print("Initializing KD trainer...")
