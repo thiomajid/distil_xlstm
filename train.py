@@ -112,7 +112,7 @@ def register_args():
     parser.add_argument(
         "--train-split",
         type=str,
-        default="validation",
+        default="train",
         help="Dataset split to use for evaluation",
     )
 
@@ -138,17 +138,17 @@ def register_args():
     )
 
     parser.add_argument(
-        "--features",
-        nargs="+",
-        default=["text"],
-        help="Feature column(s) to use from dataset",
-    )
-
-    parser.add_argument(
         "--eval-samples",
         type=str,
         default="all",
         help="Number of samples to evaluate (integer or 'all')",
+    )
+
+    parser.add_argument(
+        "--features",
+        nargs="+",
+        default=["text"],
+        help="Feature column(s) to use from dataset",
     )
 
     # Schedule parameters
@@ -269,6 +269,49 @@ def register_args():
         help="Method for computing Frobenius norm",
     )
 
+    # New arguments for learning rate, scheduler, teacher model and quantization
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=None,
+        help="Override learning rate for training",
+    )
+
+    parser.add_argument(
+        "--lr-scheduler-type",
+        type=str,
+        default=None,
+        choices=[
+            "linear",
+            "cosine",
+            "cosine_with_restarts",
+            "polynomial",
+            "constant",
+            "constant_with_warmup",
+        ],
+        help="Override learning rate scheduler type",
+    )
+
+    parser.add_argument(
+        "--teacher-name",
+        type=str,
+        default=None,
+        help="Override teacher model name/path",
+    )
+
+    parser.add_argument(
+        "--quantize-teacher",
+        action="store_true",
+        help="Use quantization for teacher model",
+    )
+
+    parser.add_argument(
+        "--no-quantize-teacher",
+        action="store_false",
+        dest="quantize_teacher",
+        help="Disable quantization for teacher model",
+    )
+
     return parser.parse_args()
 
 
@@ -327,6 +370,21 @@ def main():
 
     if args.frobenius_norm_computation is not None:
         trainer_args.frobenius_norm_computation = args.frobenius_norm_computation
+
+    # Override learning rate and scheduler if provided
+    if args.learning_rate is not None:
+        trainer_args.learning_rate = args.learning_rate
+
+    if args.lr_scheduler_type is not None:
+        trainer_args.lr_scheduler_type = args.lr_scheduler_type
+
+    # Override teacher model name if provided
+    if args.teacher_name is not None:
+        trainer_args.teacher_name = args.teacher_name
+
+    # Override teacher quantization if provided
+    if hasattr(args, "quantize_teacher"):
+        trainer_args.quantize_teacher = args.quantize_teacher
 
     # Update hub_model_id if provided
     if args.hub_model_id is not None:
