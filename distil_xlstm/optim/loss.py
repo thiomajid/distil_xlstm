@@ -58,8 +58,10 @@ class FrobeniusLoss(nn.Module):
                 student_hidden_states.shape
             )
 
-            teacher_hidden_states = teacher_hidden_states.view(
-                batch_size, -1, seq_len, hidden_dim
+            teacher_hidden_states = rearrange(
+                teacher_hidden_states,
+                "(n b) s d -> b n s d",
+                b=batch_size,
             )
 
             num_attention_layers = teacher_hidden_states.shape[1]
@@ -71,7 +73,6 @@ class FrobeniusLoss(nn.Module):
                 num_xlstm_blocks,
                 device=student_hidden_states.device,
                 dtype=student_hidden_states.dtype,
-                requires_grad=True,
             )
 
             for idx in range(num_xlstm_blocks):
