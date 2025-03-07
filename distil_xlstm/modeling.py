@@ -72,16 +72,18 @@ class DistilxLSTM(PreTrainedModel):
         hidden_states_per_block = torch.empty(
             size=(
                 self.config.xlstm_cfg.num_blocks,
-                hidden_states.size(0),
-                hidden_states.size(2),
+                *hidden_states.shape,
             ),
             device=hidden_states.device,
             dtype=hidden_states.dtype,
         )
-        
+
         if frobenius_computation == "ratio":
+            hidden_states_per_block.requires_grad_(True)
+
             for idx, block in enumerate(self.xlstm_block_stack.blocks):
-                hidden_states_per_block[idx] = block(hidden_states)
+                blk_out = block(hidden_states)
+                hidden_states_per_block[idx] = blk_out
 
             last_hidden_state = self.xlstm_block_stack.post_blocks_norm(
                 hidden_states_per_block[-1]

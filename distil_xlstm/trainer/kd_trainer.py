@@ -89,7 +89,7 @@ class KDTrainer(Trainer):
                 else student_output.hidden_states
             )
 
-            frobenius_loss = self.frobenius_criterion(
+            frobenius_loss, norm_per_block = self.frobenius_criterion(
                 teacher_hidden_state=teacher_output.hidden_states,
                 student_hidden_state=student_h,
                 computation=self.args.frobenius_norm_computation,
@@ -104,6 +104,14 @@ class KDTrainer(Trainer):
                     "frobenius_weight": self.args.frobenius_weight,
                 }
             )
+
+            if norm_per_block is not None:
+                for idx, norm in enumerate(norm_per_block):
+                    metrics.update(
+                        {
+                            f"frobenius_norm_{idx}": norm.item(),
+                        }
+                    )
 
         total_loss += task_weight * task_loss
         metrics.update(

@@ -2,15 +2,15 @@
 teacher_name: "HuggingFaceTB/SmolLM2-360M-Instruct"
 quantize_teacher: false
 xlstm_config_path: "./model_config.yaml"
-dataset_url: "HuggingFaceFW/fineweb"
+dataset_url: "roneneldan/TinyStories"
 v2_init: true
 
-train_subset: "default"
+# train_subset: "default"
 train_split: "train"
-train_samples: 10000
+train_samples: 5000
 
-eval_subset: "CC-MAIN-2018-43"
-eval_split: "train"
+# eval_subset: "CC-MAIN-2018-43"
+eval_split: "validation"
 eval_samples: 1000
 features: ["text"]
 
