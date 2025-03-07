@@ -52,16 +52,16 @@ class FrobeniusLoss(nn.Module):
         if isinstance(teacher_hidden_states, tuple):
             teacher_hidden_states = torch.cat(teacher_hidden_states, dim=0)
 
-        batch_size = student_hidden_states.shape[0]
-        teacher_hidden_states = rearrange(
-            teacher_hidden_states,
-            "(n b) s d -> b n s d",
-            b=batch_size,
-        )
-
         norm_per_block: torch.Tensor | None = None
         if computation == "ratio":
-            num_xlstm_blocks = student_hidden_states.shape[0]
+            num_xlstm_blocks, batch_size, seq_len, hidden_dim = (
+                student_hidden_states.shape
+            )
+
+            teacher_hidden_states = teacher_hidden_states.view(
+                batch_size, -1, seq_len, hidden_dim
+            )
+
             num_attention_layers = teacher_hidden_states.shape[1]
 
             # Calculate base step size
@@ -107,6 +107,12 @@ class FrobeniusLoss(nn.Module):
 
             norm = norm_per_block.mean(dim=0)
         else:
+            teacher_hidden_states = rearrange(
+                teacher_hidden_states,
+                "(n b) s d -> b n s d",
+                b=student_hidden_states.shape[0],
+            )
+
             # layer-wise average of teacher hidden states
             # (batch_size, num_layers, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
             avg_teacher_hidden_state = teacher_hidden_states.mean(dim=1)
