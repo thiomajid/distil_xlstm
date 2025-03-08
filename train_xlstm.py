@@ -14,6 +14,7 @@ from transformers import (
 from distil_xlstm.config import DistilxLSTMConfig
 from distil_xlstm.data import get_cached_dataset
 from distil_xlstm.modeling import DistilxLSTM
+from distil_xlstm.optim.callbacks import PerplexityLoggingCallback
 from distil_xlstm.utils import count_parameters
 
 
@@ -314,6 +315,7 @@ if __name__ == "__main__":
         eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         data_collator=data_collator,
+        callbacks=[PerplexityLoggingCallback()],
     )
 
     # Train the model

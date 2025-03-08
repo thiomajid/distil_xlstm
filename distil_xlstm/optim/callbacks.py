@@ -1,3 +1,4 @@
+import torch
 from transformers import TrainerCallback
 
 from distil_xlstm.optim.scheduler import ScalarAnnealingScheduler
@@ -28,3 +29,24 @@ class AnnealingCallback(TrainerCallback):
         if state.is_world_process_zero:
             for weight, scheduler in self._schedulers.items():
                 setattr(args, weight, scheduler.downscale_on_epoch_end())
+
+
+# Add a custom callback to log perplexity during training and evaluation
+class PerplexityLoggingCallback(TrainerCallback):
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs is not None:
+            # Calculate and log perplexity for training
+            if "loss" in logs:
+                try:
+                    perplexity = torch.exp(logs["loss"]).item()
+                    logs["perplexity"] = round(perplexity, 4)
+                except OverflowError:
+                    logs["perplexity"] = float("inf")
+
+            # Calculate and log perplexity for evaluation
+            if "eval_loss" in logs:
+                try:
+                    eval_perplexity = torch.exp(logs["eval_loss"]).item()
+                    logs["eval_perplexity"] = round(eval_perplexity, 4)
+                except OverflowError:
+                    logs["eval_perplexity"] = float("inf")
