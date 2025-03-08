@@ -225,7 +225,7 @@ def evaluate_perplexity(model, dataset, batch_size, device):
 
 
 # Add function to get cached or fresh dataset
-def get_cached_dataset(args, tokenizer):
+def __get_cached_dataset(args, tokenizer):
     # Create cache directory
     cache_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "dataset_cache"
@@ -278,7 +278,7 @@ def main():
     print(f"Parameter count: {count_parameters(model)}")
 
     # Load cached dataset or download if not available
-    eval_data = get_cached_dataset(args, tokenizer)
+    eval_data = __get_cached_dataset(args, tokenizer)
 
     # Prepare for PyTorch
     eval_data.set_format("torch", columns=["input_ids", "attention_mask", "length"])

@@ -15,6 +15,7 @@ from transformers import (
     PreTrainedModel,
 )
 from xlstm import xLSTMBlockStack
+from xlstm.components.init import small_init_init_
 
 from distil_xlstm.config import DistilxLSTMConfig
 from distil_xlstm.optim.loss import FrobeniusNormComputation
@@ -61,9 +62,15 @@ class DistilxLSTM(PreTrainedModel):
 
     def reset_parameters(self):
         # Reset the parameters of the model
-        self.token_embedding.reset_parameters()
         self.xlstm_block_stack.reset_parameters()
-        self.lm_head.reset_parameters()
+        small_init_init_(
+            self.token_embedding.weight, dim=self.config.xlstm_cfg.embedding_dim
+        )
+
+        if not self.config.xlstm_cfg.tie_weights:
+            small_init_init_(
+                self.lm_head.weight, dim=self.config.xlstm_cfg.embedding_dim
+            )
 
     def reset_parameters_for_distillation(self):
         self.xlstm_block_stack.reset_parameters()
