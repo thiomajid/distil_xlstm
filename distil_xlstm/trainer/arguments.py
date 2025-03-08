@@ -99,6 +99,12 @@ class KDArguments(TrainingArguments):
     )
 
     compute_kl_loss: bool = field(default=True)
+    additive_frobenius_weight: bool = field(
+        default=False,
+        metadata={
+            "help": "Indicate if the Frobenius norm weight combined with the two other weights should sum to 1.0"
+        },
+    )
 
 
 class DualGpuTraingArgs(KDArguments):

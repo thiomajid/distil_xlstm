@@ -377,6 +377,20 @@ def register_args():
         help="Disable quantization for teacher model",
     )
 
+    # Add new argument for additive_frobenius_weight
+    parser.add_argument(
+        "--additive-frobenius-weight",
+        action="store_true",
+        help="Use additive Frobenius weight computation",
+    )
+
+    parser.add_argument(
+        "--no-additive-frobenius-weight",
+        action="store_false",
+        dest="additive_frobenius_weight",
+        help="Use non-additive Frobenius weight computation",
+    )
+
     return parser.parse_args()
 
 
@@ -432,6 +446,8 @@ def main():
         trainer_args.compute_kl_loss = args.compute_kl_loss
     if hasattr(args, "compute_frobenius_loss"):
         trainer_args.compute_frobenius_loss = args.compute_frobenius_loss
+    if hasattr(args, "additive_frobenius_weight"):
+        trainer_args.additive_frobenius_weight = args.additive_frobenius_weight
 
     if args.frobenius_norm_computation is not None:
         trainer_args.frobenius_norm_computation = args.frobenius_norm_computation

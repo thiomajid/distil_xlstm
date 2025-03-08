@@ -37,6 +37,7 @@ temperature_schedule: "decreasing"
 frobenius_norm_computation: "ratio"
 compute_frobenius_loss: true
 compute_kl_loss: true
+additive_frobenius_weight: true
 
 # HF TrainerArguments arguments
 num_train_epochs: 1

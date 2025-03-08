@@ -106,7 +106,8 @@ class KDTrainer(Trainer):
             )
 
             total_loss += frobenius_loss * self.args.frobenius_weight
-            task_weight -= self.args.frobenius_weight
+            if self.args.additive_frobenius_weight:
+                task_weight -= self.args.frobenius_weight
 
             metrics.update(
                 {
