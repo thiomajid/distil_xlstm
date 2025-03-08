@@ -296,6 +296,7 @@ if __name__ == "__main__":
         fp16=args.fp16,
         optim=args.optimizer,
         load_best_model_at_end=True,
+        eval_strategy="steps",
         save_total_limit=2,
         push_to_hub=args.push_to_hub,
         hub_model_id=args.hub_model_id,
