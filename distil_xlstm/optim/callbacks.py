@@ -1,4 +1,5 @@
-import torch
+import math
+
 from transformers import TrainerCallback
 
 from distil_xlstm.optim.scheduler import ScalarAnnealingScheduler
@@ -38,7 +39,7 @@ class PerplexityLoggingCallback(TrainerCallback):
             # Calculate and log perplexity for training
             if "loss" in logs:
                 try:
-                    perplexity = torch.exp(logs["loss"]).item()
+                    perplexity = math.exp(logs["loss"])
                     logs["perplexity"] = round(perplexity, 4)
                 except OverflowError:
                     logs["perplexity"] = float("inf")
@@ -46,7 +47,7 @@ class PerplexityLoggingCallback(TrainerCallback):
             # Calculate and log perplexity for evaluation
             if "eval_loss" in logs:
                 try:
-                    eval_perplexity = torch.exp(logs["eval_loss"]).item()
+                    eval_perplexity = math.exp(logs["eval_loss"])
                     logs["eval_perplexity"] = round(eval_perplexity, 4)
                 except OverflowError:
                     logs["eval_perplexity"] = float("inf")
