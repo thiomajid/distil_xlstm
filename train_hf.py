@@ -267,6 +267,8 @@ if __name__ == "__main__":
         lr_scheduler_type="cosine",
         report_to="tensorboard",
         logging_dir=args.output_dir,
+        logging_steps=200,
+        save_steps=200,
     )
 
     # Initialize trainer

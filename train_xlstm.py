@@ -288,7 +288,6 @@ if __name__ == "__main__":
 
     # Set up training arguments
     training_args = TrainingArguments(
-        output_dir=args.output_dir,
         overwrite_output_dir=True,
         num_train_epochs=args.num_train_epochs,
         per_device_train_batch_size=args.per_device_train_batch_size,
@@ -304,7 +303,10 @@ if __name__ == "__main__":
         hub_token=args.hf_token,
         lr_scheduler_type="cosine",
         report_to="tensorboard",
+        output_dir=args.output_dir,
         logging_dir=args.output_dir,
+        logging_steps=200,
+        save_steps=200,
     )
 
     # Initialize trainer
