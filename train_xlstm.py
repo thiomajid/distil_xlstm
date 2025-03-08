@@ -303,8 +303,7 @@ if __name__ == "__main__":
         hub_token=args.hf_token,
         lr_scheduler_type="cosine",
         report_to="tensorboard",
-        output_dir="xlstm_artifacts",
-        logging_dir="xlstm_artifacts",
+        logging_dir=args.output_dir,
     )
 
     # Initialize trainer
