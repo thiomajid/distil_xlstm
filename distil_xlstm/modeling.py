@@ -159,8 +159,13 @@ class DistilxLSTM(PreTrainedModel):
             while teacher_num_heads % 4 != 0:
                 teacher_num_heads += 1
 
-            xlstm_config_dict["mlstm_block"]["mlstm"]["num_heads"] = teacher_num_heads
-            xlstm_config_dict["slstm_block"]["slstm"]["num_heads"] = teacher_num_heads
+            # Having too many heads is not a problem per se, but it makes the hidden dimensions
+            # too small but also increases the number of computational units
+            # dividing by 4 is a good trade-off
+            num_heads = teacher_num_heads // 4
+
+            xlstm_config_dict["mlstm_block"]["mlstm"]["num_heads"] = num_heads
+            xlstm_config_dict["slstm_block"]["slstm"]["num_heads"] = num_heads
 
         parsed_config = DistilxLSTMConfig.parse_xlstm_config_dict(
             copy.deepcopy(xlstm_config_dict)
