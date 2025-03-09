@@ -62,6 +62,8 @@ class KDTrainer(Trainer):
             dtype=task_loss.dtype,
         )
 
+        is_log_step = self.state.global_step % self.args.logging_steps == 0
+
         # # Compute KL divergence loss
         if self.args.compute_kl_loss:
             student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
@@ -123,12 +125,13 @@ class KDTrainer(Trainer):
                 }
 
                 # Log the Frobenius norm per block
-                for key, value in norm_dict.items():
-                    self.tb_writer.add_scalar(
-                        key,
-                        value,
-                        global_step=self.state.global_step,
-                    )
+                if is_log_step:
+                    for key, value in norm_dict.items():
+                        self.tb_writer.add_scalar(
+                            key,
+                            value,
+                            global_step=self.state.global_step,
+                        )
 
         total_loss += task_weight * task_loss
         perplexity = torch.exp(task_loss)
@@ -142,12 +145,13 @@ class KDTrainer(Trainer):
         )
 
         # Log the metrics
-        for key, value in metrics.items():
-            self.tb_writer.add_scalar(
-                f"train/{key}",
-                value,
-                global_step=self.state.global_step,
-            )
+        if is_log_step:
+            for key, value in metrics.items():
+                self.tb_writer.add_scalar(
+                    f"train/{key}",
+                    value,
+                    global_step=self.state.global_step,
+                )
 
         return (total_loss, student_output) if return_outputs else total_loss
 
