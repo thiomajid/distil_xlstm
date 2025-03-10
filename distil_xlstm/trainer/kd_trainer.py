@@ -98,11 +98,10 @@ class KDTrainer(Trainer):
             )
 
             frobenius_loss, norm_per_block = self.frobenius_criterion(
-                # An additional hidden state is added by the transformer library after normalization
-                # but we only care about the output of attention layers
-                teacher_hidden_states=teacher_output.hidden_states[
-                    : self._teacher_num_attention_layers
-                ],
+                # skip the first hidden state because the "transformers" library
+                # sets the embedding layer's output as the first element in the
+                # all_hidden_states tuple
+                teacher_hidden_states=teacher_output.hidden_states[1:],
                 student_hidden_states=student_h,
                 computation=self.args.frobenius_norm_computation,
             )
