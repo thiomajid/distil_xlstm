@@ -1,22 +1,38 @@
-vocab_size: 32_000
-context_length: 512
-num_blocks: 6
-embedding_dim: 32
-slstm_at: [0, 2, 4]
+use_tfla: true
+xlstm_config:
+  vocab_size: 32_000
+  context_length: 512
+  num_blocks: 6
+  embedding_dim: 32
+  slstm_at: [0, 2, 4]
 
-mlstm_block:
-  mlstm:
-    conv1d_kernel_size: 4
-    qkv_proj_blocksize: 32
-    num_heads: 8
+  mlstm_block:
+    mlstm:
+      conv1d_kernel_size: 4
+      qkv_proj_blocksize: 32
+      num_heads: 8
 
-slstm_block:
-  slstm:
-    backend: "vanilla"
-    num_heads: 8
-    conv1d_kernel_size: 4
-    bias_init: "powerlaw_blockdependent"
+  slstm_block:
+    slstm:
+      backend: "vanilla"
+      num_heads: 8
+      conv1d_kernel_size: 4
+      bias_init: "powerlaw_blockdependent"
 
-  feedforward:
-    proj_factor: 1.7
-    act_fn: "gelu"
+    feedforward:
+      proj_factor: 1.7
+      act_fn: "gelu"
+
+tfla_config:
+  embedding_dim: 32
+  num_heads: 8
+  num_blocks: 6
+  vocab_size: 32_000
+  use_bias: false
+  chunkwise_kernel: "chunkwise--native_autograd"
+  sequence_kernel: "native_sequence__native"
+  step_kernel: "native"
+  mode: "train"
+  autocast_kernel_dtype: "float16"
+  inference_state_dtype: "float16"
+  weight_mode: "fused"

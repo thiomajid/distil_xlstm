@@ -1,5 +1,5 @@
 from .config import DistilxLSTMConfig
-from .modeling import DistilxLSTM
+from .modeling import DistilxLSTMForCausalLM
 from .text_generator import TextGenerator
 
-__all__ = ["DistilxLSTMConfig", "DistilxLSTM", "TextGenerator"]
+__all__ = ["DistilxLSTMConfig", "DistilxLSTMForCausalLM", "TextGenerator"]

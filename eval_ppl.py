@@ -10,7 +10,7 @@ from datasets import load_from_disk
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from distil_xlstm import DistilxLSTM
+from distil_xlstm import DistilxLSTMForCausalLM
 from distil_xlstm.data import get_dataset
 from distil_xlstm.utils import count_parameters
 
@@ -130,7 +130,7 @@ def load_model(args):
     print(f"Loading model from {args.model_path}")
 
     if args.model_type == "distil_xlstm":
-        model = DistilxLSTM.from_safetensors(
+        model = DistilxLSTMForCausalLM.from_safetensors(
             hf_repo=args.hf_repo,
             filename=args.model_path,
             device=args.device,

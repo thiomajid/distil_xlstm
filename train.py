@@ -10,7 +10,7 @@ from transformers import (
     HfArgumentParser,
 )
 
-from distil_xlstm import DistilxLSTM
+from distil_xlstm import DistilxLSTMForCausalLM
 from distil_xlstm.data import get_cached_dataset
 from distil_xlstm.optim import AnnealingCallback, ScalarAnnealingScheduler
 from distil_xlstm.trainer import KDArguments, KDTrainer
@@ -25,6 +25,27 @@ def register_args():
         type=str,
         default="./trainer_arguments.yaml",
         help="Path to the trainer config file",
+    )
+
+    parser.add_argument(
+        "--xlstm-config-path",
+        type=str,
+        default="./model_config.yaml",
+        help="Path to the xLSTM config file",
+    )
+
+    parser.add_argument(
+        "--use-tfla",
+        action="store_true",
+        default=True,
+        help="Use TFLA for training",
+    )
+
+    parser.add_argument(
+        "--no-use-tfla",
+        action="store_false",
+        dest="use_tfla",
+        help="Do not use TFLA for training",
     )
 
     parser.add_argument(
@@ -524,13 +545,16 @@ def main():
 
     print("Creating student model...")
     # Create student model with frozen head and embedding
-    student_model = DistilxLSTM.init_for_distillation_with_freezed_head_and_embedding(
-        teacher_model=teacher_model,
-        tokenizer=tokenizer,
-        xlstm_config_path=trainer_args.xlstm_config_path,
-        max_sequence_length=args.max_seq_length,
-        slstm_pos=args.slstm_pos,  # Pass slstm_pos from args to function
-        v2=trainer_args.v2_init,
+    student_model = (
+        DistilxLSTMForCausalLM.init_for_distillation_with_freezed_head_and_embedding(
+            teacher_model=teacher_model,
+            tokenizer=tokenizer,
+            xlstm_config_path=trainer_args.xlstm_config_path,
+            max_sequence_length=args.max_seq_length,
+            slstm_pos=args.slstm_pos,  # Pass slstm_pos from args to function
+            v2=trainer_args.v2_init,
+            use_tfla=args.use_tfla,
+        )
     )
 
     print(f"Student model total parameters: {count_parameters(student_model)}")

@@ -3,7 +3,7 @@ from functools import partial
 import torch.nn.functional as F
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 
-from distil_xlstm.modeling import DistilxLSTM
+from distil_xlstm.modeling import DistilxLSTMForCausalLM
 from distil_xlstm.optim.loss import FrobeniusLoss
 from distil_xlstm.trainer.arguments import KDArguments
 
@@ -12,7 +12,7 @@ class DualGpuTrainer(Trainer):
     def __init__(
         self,
         teacher_model: AutoModelForCausalLM,
-        student_model: DistilxLSTM,
+        student_model: DistilxLSTMForCausalLM,
         args: KDArguments,
         tokenizer: AutoTokenizer,
         **kwargs,

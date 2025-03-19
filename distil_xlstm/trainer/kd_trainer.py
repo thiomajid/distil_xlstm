@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
-from distil_xlstm.modeling import DistilxLSTM
+from distil_xlstm.modeling import DistilxLSTMForCausalLM
 from distil_xlstm.optim.loss import FrobeniusLoss
 from distil_xlstm.trainer.arguments import KDArguments
 from distil_xlstm.utils import xLSTMCausalLMOutput
@@ -17,7 +17,7 @@ class KDTrainer(Trainer):
     def __init__(
         self,
         teacher_model: AutoModelForCausalLM,
-        student_model: DistilxLSTM,
+        student_model: DistilxLSTMForCausalLM,
         args: KDArguments,
         tokenizer: AutoTokenizer,
         **kwargs,
@@ -45,7 +45,9 @@ class KDTrainer(Trainer):
         output = self.teacher(**inputs, output_hidden_states=True)
         return output
 
-    def compute_loss(self, model: DistilxLSTM, inputs, return_outputs=False, **kwargs):
+    def compute_loss(
+        self, model: DistilxLSTMForCausalLM, inputs, return_outputs=False, **kwargs
+    ):
         student_output: xLSTMCausalLMOutput = model(
             **inputs,
             output_hidden_states=True,

@@ -1,14 +1,14 @@
 from transformers import AutoTokenizer, Trainer
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
-from distil_xlstm.modeling import DistilxLSTM
+from distil_xlstm.modeling import DistilxLSTMForCausalLM
 from distil_xlstm.trainer.arguments import KDArguments
 
 
 class VanillaTrainer(Trainer):
     def __init__(
         self,
-        model: DistilxLSTM,
+        model: DistilxLSTMForCausalLM,
         args: KDArguments,
         tokenizer: AutoTokenizer,
         **kwargs,
@@ -22,7 +22,9 @@ class VanillaTrainer(Trainer):
 
         self.args = args
 
-    def compute_loss(self, model: DistilxLSTM, inputs, return_outputs=False, **kwargs):
+    def compute_loss(
+        self, model: DistilxLSTMForCausalLM, inputs, return_outputs=False, **kwargs
+    ):
         student_output: CausalLMOutputWithPast = model(
             **inputs,
             output_hidden_states=True,
