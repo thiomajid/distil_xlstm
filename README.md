@@ -1,6 +1,6 @@
 # Distil-xLSTM: Learning Attention Mechanisms through Recurrent Structures
 
-This repository contains the code for the distillation approach described in our Distil-xLSTM paper.
+This repository contains the code for the distillation approach described in our [Distil-xLSTM paper](https://arxiv.org/abs/2503.18565).
 
 ## Citation
 
