@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from .modeling import DistilxLSTM
+from .modeling import DistilxLSTMForCausalLM
 
 DecodingStrategy = Literal["greedy", "sampling", "top_k", "top_p", "beam_search"]
 
@@ -14,7 +14,7 @@ class TextGenerator:
     A wrapper around :class:`DistilxLSTM` that supports various decoding strategies
     """
 
-    def __init__(self, model: DistilxLSTM):
+    def __init__(self, model: DistilxLSTMForCausalLM):
         self.model = model
 
     @torch.no_grad

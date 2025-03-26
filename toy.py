@@ -1,23 +1,26 @@
-from typing import cast
-
+import torch
 import yaml
-from transformers import HfArgumentParser
 
-from distil_xlstm import DistilxLSTM, DistilxLSTMConfig
-from distil_xlstm.trainer import KDArguments
-from distil_xlstm.utils import count_parameters
-
-parser = HfArgumentParser(KDArguments)
+from distil_xlstm import DistilxLSTMConfig, DistilxLSTMForCausalLM
+from distil_xlstm.utils import xLSTMCausalLMOutput
 
 
-trainer_args = parser.parse_yaml_file(yaml_file="./distillation_config.yaml")[0]
-trainer_args = cast(KDArguments, trainer_args)
+def main():
+    with open("./demo_config.yaml", "r") as f:
+        cfg_dict = yaml.safe_load(f)
 
-with open(trainer_args.xlstm_config_path, "r") as file:
-    xlstm_config_dict = yaml.safe_load(file)
+    config = DistilxLSTMConfig.from_dict(cfg_dict)
 
-xlstm_cfg = DistilxLSTMConfig.parse_xlstm_config_dict(xlstm_config_dict)
-cfg = DistilxLSTMConfig(xlstm_cfg=xlstm_cfg)
-model = DistilxLSTM(config=cfg)
+    model = DistilxLSTMForCausalLM(config=config)
+    print(model)
 
-print(count_parameters(model))
+    dummy_input: xLSTMCausalLMOutput = torch.randint(
+        1, config.xlstm_cfg.vocab_size, (2, config.xlstm_cfg.context_length)
+    )
+
+    output = model(dummy_input, frobenius_computation="ratio")
+    print(output.logits.shape)
+
+
+if __name__ == "__main__":
+    main()
