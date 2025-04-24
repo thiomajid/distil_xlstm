@@ -32,7 +32,7 @@ def main(cfg: DictConfig):
 
     # Load trainer arguments from YAML file
     args = parser.parse_dict(
-        yaml_file=OmegaConf.to_container(cfg["trainer"], resolve=True)
+        OmegaConf.to_container(cfg["trainer"], resolve=True)
     )[0]
 
     args = cast(KDArguments, args)

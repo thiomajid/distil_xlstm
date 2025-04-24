@@ -38,9 +38,7 @@ def main(cfg: DictConfig):
     parser = HfArgumentParser(KDArguments)
 
     # Load trainer arguments from YAML file
-    args = parser.parse_dict(
-        yaml_file=OmegaConf.to_container(cfg["trainer"], resolve=True)
-    )[0]
+    args = parser.parse_dict(OmegaConf.to_container(cfg["trainer"], resolve=True))[0]
     args = cast(KDArguments, args)
 
     logger.info("Trainer arguments:")
