@@ -68,11 +68,11 @@ def main(cfg: DictConfig):
     logger.info(f"model trainable parameters: {count_trainable_parameters(model)}")
 
     logger.info(
-        f"Loading training dataset from {args.dataset_url} with {args.train_samples} samples"
+        f"Loading training dataset from {args.train_} with {args.train_samples} samples"
     )
 
     train_dataset = get_dataset(
-        hub_url=args.dataset_url,
+        hub_url=args.train_,
         subset=args.train_subset,
         features=args.features,
         max_seq_length=config.xlstm_config.context_length,
@@ -86,11 +86,11 @@ def main(cfg: DictConfig):
     train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     logger.info(
-        f"Loading evaluation dataset from {args.dataset_url} with {args.eval_samples} samples"
+        f"Loading evaluation dataset from {args.train_} with {args.eval_samples} samples"
     )
 
     eval_dataset = get_dataset(
-        hub_url=args.dataset_url,
+        hub_url=args.train_,
         subset=args.eval_subset,
         features=args.features,
         max_seq_length=config.xlstm_config.context_length,

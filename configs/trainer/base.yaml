@@ -1,12 +1,13 @@
 # Custom training arguments
 teacher_name: "HuggingFaceTB/SmolLM2-135M-Instruct"
 quantize_teacher: false
-dataset_url: "roneneldan/TinyStories"
 
+train_dataset_url: "roneneldan/TinyStories"
 # train_subset: "default"
 train_split: "train"
 train_samples: 10_000
 
+eval_dataset_url: "roneneldan/TinyStories"
 # eval_subset: "CC-MAIN-2018-43"
 eval_split: "validation"
 eval_samples: 1000

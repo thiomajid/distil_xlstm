@@ -10,15 +10,15 @@ from ..optim.scheduler import ParamScheduleType
 
 @dataclass
 class KDArguments(TrainingArguments):
-    dataset_url: str = field(default="allenai/c4")
-
+    train_dataset_url: str = field(default="allenai/c4")
     train_subset: Optional[str] = field(default=None)
-    train_samples: int = field(default=10_000)
     train_split: str = field(default="train")
+    train_samples: int = field(default=10_000)
 
+    eval_dataset_url: str = field(default="allenai/c4")
     eval_subset: Optional[str] = field(default=None)
-    eval_samples: int = field(default=5_000)
     eval_split: str = field(default="validation")
+    eval_samples: int = field(default=5_000)
 
     teacher_name: str = field(
         default="Qwen/Qwen2.5-1.5B-Instruct",

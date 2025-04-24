@@ -31,9 +31,7 @@ def main(cfg: DictConfig):
     parser = HfArgumentParser(KDArguments)
 
     # Load trainer arguments from YAML file
-    args = parser.parse_dict(
-        OmegaConf.to_container(cfg["trainer"], resolve=True)
-    )[0]
+    args = parser.parse_dict(OmegaConf.to_container(cfg["trainer"], resolve=True))[0]
 
     args = cast(KDArguments, args)
 
@@ -71,11 +69,11 @@ def main(cfg: DictConfig):
 
     # Load datasets
     logger.info(
-        f"Loading training dataset from {args.dataset_url} with {args.train_samples} samples"
+        f"Loading training dataset from {args.train_} with {args.train_samples} samples"
     )
 
     train_dataset = get_dataset(
-        hub_url=args.dataset_url,
+        hub_url=args.train_,
         subset=args.train_subset,
         features=args.features,
         max_seq_length=MAX_SEQ_LENGTH,
@@ -89,11 +87,11 @@ def main(cfg: DictConfig):
     train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     logger.info(
-        f"Loading evaluation dataset from {args.dataset_url} with {args.eval_samples} samples"
+        f"Loading evaluation dataset from {args.train_} with {args.eval_samples} samples"
     )
 
     eval_dataset = get_dataset(
-        hub_url=args.dataset_url,
+        hub_url=args.train_,
         subset=args.eval_subset,
         features=args.features,
         max_seq_length=MAX_SEQ_LENGTH,
