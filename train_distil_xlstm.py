@@ -44,16 +44,6 @@ def main(cfg: DictConfig):
     logger.info("Trainer arguments:")
     pprint(args)
 
-    config_dict = OmegaConf.to_container(cfg["model"], resolve=True)
-    xlstm_dict = config_dict.pop("xlstm_config", None)
-    config = DistilxLSTMConfig(
-        xlstm_config=parse_xlstm_config_dict(xlstm_dict),
-        **config_dict,
-    )
-
-    logger.info("Model configuration:")
-    pprint(config)
-
     logger.info("Loading teacher model and tokenizer...")
     # Load teacher model and tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
@@ -103,6 +93,13 @@ def main(cfg: DictConfig):
         teacher_model = teacher_model.to("cuda")
 
     logger.info("Creating student model...")
+    config_dict = OmegaConf.to_container(cfg["model"], resolve=True)
+    xlstm_dict = config_dict.pop("xlstm_config", None)
+    config = DistilxLSTMConfig(
+        xlstm_config=parse_xlstm_config_dict(xlstm_dict),
+        **config_dict,
+    )
+
     student_model = (
         DistilxLSTMForCausalLM.init_for_distillation_with_freezed_head_and_embedding(
             config=config,
@@ -110,6 +107,9 @@ def main(cfg: DictConfig):
             tokenizer=tokenizer,
         )
     )
+
+    logger.info("Model configuration:")
+    pprint(student_model.config.to_dict())
 
     logger.info(f"Student model total parameters: {count_parameters(student_model)}")
 
