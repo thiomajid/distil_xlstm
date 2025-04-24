@@ -1,0 +1,3 @@
+defaults:
+  - model: distillation
+  - trainer: distillation

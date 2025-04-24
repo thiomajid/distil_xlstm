@@ -22,17 +22,3 @@ xlstm_config:
     feedforward:
       proj_factor: 1.7
       act_fn: "gelu"
-
-tfla_config:
-  embedding_dim: 32
-  num_heads: 8
-  num_blocks: 6
-  vocab_size: 32_000
-  use_bias: false
-  chunkwise_kernel: "chunkwise--triton_xl_chunk"
-  sequence_kernel: "native_sequence__triton"
-  step_kernel: "triton"
-  mode: "train"
-  autocast_kernel_dtype: "float16"
-  inference_state_dtype: "float16"
-  weight_mode: "fused"

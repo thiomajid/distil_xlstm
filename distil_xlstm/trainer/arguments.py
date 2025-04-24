@@ -33,6 +33,7 @@ class KDArguments(TrainingArguments):
     )
 
     quantize_teacher: bool = field(default=True)
+    trust_remote_code: bool = field(default=True)
 
     features: list[str] = field(
         default_factory=list,

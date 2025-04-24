@@ -1,11 +1,9 @@
-import copy
 from pathlib import Path
 from typing import Optional
 
 import safetensors
 import torch
 import torch.nn.functional as F
-import yaml
 from einops import rearrange
 from torch import nn
 from transformers import (
@@ -16,7 +14,6 @@ from transformers import (
 )
 from xlstm import xLSTMBlockStack
 from xlstm.components.init import small_init_init_
-from xlstm.xlstm_large.model import xLSTMLargeConfig
 
 from distil_xlstm.config import DistilxLSTMConfig
 from distil_xlstm.optim.loss import FrobeniusNormComputation
@@ -38,6 +35,7 @@ class DistilxLSTMModel(PreTrainedModel):
         self.embedding = nn.Embedding(
             num_embeddings=config.xlstm_cfg.vocab_size,
             embedding_dim=config.xlstm_cfg.embedding_dim,
+            padding_idx=config.pad_token_id,
         )
 
         self.embedding_dropout = (
@@ -186,31 +184,17 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
     @staticmethod
     def init_for_distillation(
         *,
+        config: DistilxLSTMConfig,
         teacher_config: AutoConfig,
         tokenizer: AutoTokenizer,
-        xlstm_config_path: str,
-        max_sequence_length: int,
-        return_xlstm_config: bool = False,
-        slstm_pos: list[int] | None = None,
         v2: bool = True,
-        use_tfla: bool = False,
     ):
-        with open(xlstm_config_path, "r") as file:
-            cfg_dict: dict = yaml.safe_load(file)
-
-        xlstm_config_dict = cfg_dict.pop("xlstm_config")
-        xlstm_config_dict["vocab_size"] = teacher_config.vocab_size
-        xlstm_config_dict["embedding_dim"] = teacher_config.hidden_size
-        xlstm_config_dict["context_length"] = max_sequence_length
+        config.xlstm_cfg.vocab_size = teacher_config.vocab_size
+        config.xlstm_cfg.embedding_dim = teacher_config.hidden_size
 
         if v2:
             num_blocks = teacher_config.num_hidden_layers // 2
-            xlstm_config_dict["num_blocks"] = num_blocks
-            xlstm_config_dict["slstm_at"] = (
-                slstm_pos
-                if slstm_pos is not None
-                else list(range(0, num_blocks - 1, 2))
-            )
+            config.xlstm_cfg.num_blocks = num_blocks
 
             teacher_num_heads = next_multiple_of(
                 teacher_config.num_attention_heads, multiple=4
@@ -221,69 +205,33 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
             # dividing by 4 is a good trade-off
             num_heads = teacher_num_heads // 4
 
-            xlstm_config_dict["mlstm_block"]["mlstm"]["num_heads"] = num_heads
-            xlstm_config_dict["slstm_block"]["slstm"]["num_heads"] = num_heads
+            config.xlstm_cfg.mlstm_block.mlstm.num_heads = num_heads
+            config.xlstm_cfg.slstm_block.slstm.num_heads = num_heads
 
-        xlstm_config = DistilxLSTMConfig.parse_xlstm_config_dict(
-            copy.deepcopy(xlstm_config_dict)
-        )
-
-        tfla_config = None
-        if use_tfla:
-            tfla_dict = cfg_dict.get("tfla_config", {})
-            tfla_config = xLSTMLargeConfig(**tfla_dict)
-            tfla_config.num_blocks = xlstm_config.num_blocks
-            tfla_config.embedding_dim = xlstm_config.embedding_dim
-            tfla_config.vocab_size = xlstm_config.vocab_size
-            tfla_config.num_heads = xlstm_config.mlstm_block.mlstm.num_heads // 4
-
-        distil_xlstm_config = DistilxLSTMConfig(
-            xlstm_cfg=xlstm_config,
-            tfla_config=tfla_config,
-            **cfg_dict,
-        )
-
-        distil_xlstm_config.use_tfla = use_tfla
-
-        xlstm_config.pad_token_id = tokenizer.pad_token_id
-
-        model = DistilxLSTMForCausalLM(config=distil_xlstm_config)
+        config.pad_token_id = tokenizer.pad_token_id
+        model = DistilxLSTMForCausalLM(config=config)
         model.reset_parameters_for_distillation()
-
-        if return_xlstm_config:
-            return model, xlstm_config
 
         return model
 
     @staticmethod
     def init_for_distillation_with_freezed_head_and_embedding(
         *,
+        config: DistilxLSTMConfig,
         teacher_model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
-        xlstm_config_path: str,
-        max_sequence_length: int,
-        slstm_pos: list[int] | None = None,
         v2: bool = True,
-        use_tfla: bool = False,
     ) -> "DistilxLSTMForCausalLM":
-        if use_tfla and not v2:
-            raise ValueError(
-                "TFLA is only supported for v2 initialization heuristic. Please set v2=True."
-            )
-
-        model, config = DistilxLSTMForCausalLM.init_for_distillation(
+        model = DistilxLSTMForCausalLM.init_for_distillation(
+            config=config,
             teacher_config=teacher_model.config,
             tokenizer=tokenizer,
-            xlstm_config_path=xlstm_config_path,
             return_xlstm_config=True,
-            slstm_pos=slstm_pos,
-            max_sequence_length=max_sequence_length,
             v2=v2,
-            use_tfla=use_tfla,
         )
 
         model = model.to(teacher_model.device)
-        model.token_embedding.load_state_dict(
+        model.xlstm.embedding.load_state_dict(
             teacher_model.model.embed_tokens.state_dict()
         )
         model.lm_head.load_state_dict(teacher_model.lm_head.state_dict())
@@ -291,14 +239,14 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         if config.xlstm_cfg.tie_weights:
             model.lm_head.weight = model.token_embedding.weight
 
-        model.token_embedding.requires_grad_(False)
+        model.xlstm.embedding.requires_grad_(False)
         model.lm_head.requires_grad_(False)
 
         print(
             f"are lm_head weights equal ? {torch.allclose(model.lm_head.weight, teacher_model.lm_head.weight)}"
         )
         print(
-            f"are embedding weights equal ? {torch.allclose(model.token_embedding.weight, teacher_model.model.embed_tokens.weight)}"
+            f"are embedding weights equal ? {torch.allclose(model.xlstm.embedding.weight, teacher_model.model.embed_tokens.weight)}"
         )
 
         print(f"xLSTM lm_head requires grad ? {model.lm_head.weight.requires_grad}")

@@ -1,8 +1,16 @@
 import subprocess
-from typing import Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 import torch
 from torch import nn
+from xlstm import (
+    FeedForwardConfig,
+    mLSTMBlockConfig,
+    mLSTMLayerConfig,
+    sLSTMBlockConfig,
+    sLSTMLayerConfig,
+    xLSTMLMModelConfig,
+)
 
 
 class xLSTMCausalLMOutput(TypedDict):
@@ -85,3 +93,36 @@ def next_multiple_of(x: int, multiple: int) -> int:
         int: The next multiple of `multiple` that is greater than or equal to `x`.
     """
     return ((x + multiple - 1) // multiple) * multiple
+
+
+def parse_xlstm_config_dict(config_dict: dict[str, Any]):
+    # mLSTM block config deserialization
+    mlstm_block_dict: dict[str, Any] = config_dict.pop("mlstm_block", None)
+    mlstm_block = None
+    if mlstm_block_dict:
+        mlstm_block = mLSTMBlockConfig(
+            mlstm=mLSTMLayerConfig(**mlstm_block_dict.pop("mlstm")),
+            **mlstm_block_dict,
+        )
+
+    # sLSTM block config deserialization
+    slstm_block_dict: dict[str, Any] = config_dict.pop("slstm_block", None)
+    slstm_block = None
+
+    if slstm_block_dict:
+        feedforward_dict = slstm_block_dict.pop("feedforward")
+        feedforward_config = FeedForwardConfig(**feedforward_dict)
+        slstm_block = sLSTMBlockConfig(
+            slstm=sLSTMLayerConfig(**slstm_block_dict.pop("slstm")),
+            feedforward=feedforward_config,
+            **slstm_block_dict,
+        )
+
+    # xLSTM stack config deserialization
+    xlstm_config = xLSTMLMModelConfig(
+        mlstm_block=mlstm_block,
+        slstm_block=slstm_block,
+        **config_dict,
+    )
+
+    return xlstm_config

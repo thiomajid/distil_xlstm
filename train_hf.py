@@ -1,244 +1,109 @@
-import argparse
-import json
+import logging
+from typing import cast
 
+import hydra
+from omegaconf import DictConfig, OmegaConf
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     DataCollatorForLanguageModeling,
+    HfArgumentParser,
     Trainer,
-    TrainingArguments,
 )
 
-from distil_xlstm.data import get_cached_dataset
+from distil_xlstm.data import get_dataset
 from distil_xlstm.optim.callbacks import PerplexityLoggingCallback
+from distil_xlstm.trainer.arguments import KDArguments
 from distil_xlstm.utils import count_parameters
 
 
-def register_args():
-    # Parse arguments
-    parser = argparse.ArgumentParser(
-        description="Train a model from scratch based on a HuggingFace model architecture"
+@hydra.main(config_path="./configs", config_name="train_config")
+def main(cfg: DictConfig):
+    # Set up logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
     )
+    logger = logging.getLogger(__name__)
+    logger.info("Starting training...")
 
-    parser.add_argument(
-        "--model-id",
-        type=str,
-        required=True,
-        help="HuggingFace model ID to use for architecture",
-    )
+    parser = HfArgumentParser(KDArguments)
 
-    parser.add_argument(
-        "--config-overrides",
-        type=str,
-        default="{}",
-        help="JSON string with config overrides (e.g., '{\"hidden_size\": 512}')",
-    )
+    # Load trainer arguments from YAML file
+    args = parser.parse_yaml_file(
+        yaml_file=OmegaConf.to_container(cfg["trainer"], resolve=True)
+    )[0]
 
-    parser.add_argument(
-        "--dataset-url",
-        type=str,
-        required=True,
-        help="URL or name of the dataset on HuggingFace",
-    )
+    args = cast(KDArguments, args)
 
-    parser.add_argument(
-        "--dataset-subset",
-        type=str,
-        default=None,
-        help="Subset of the dataset (optional)",
-    )
+    MODEL_ID: str = cfg["hub_model_id"]
+    MAX_SEQ_LENGTH = cfg["max_seq_length"]
 
-    parser.add_argument(
-        "--train-split",
-        type=str,
-        default="train",
-        help="Dataset split to use for training",
-    )
-
-    parser.add_argument(
-        "--eval-split",
-        type=str,
-        default="validation",
-        help="Dataset split to use for evaluation",
-    )
-
-    parser.add_argument(
-        "--train-samples",
-        type=str,
-        default="all",
-        help="Number of samples for training (integer or 'all')",
-    )
-
-    parser.add_argument(
-        "--eval-samples",
-        type=str,
-        default="all",
-        help="Number of samples for evaluation (integer or 'all')",
-    )
-
-    parser.add_argument(
-        "--features",
-        nargs="+",
-        default=["text"],
-        help="Feature column(s) to use from dataset",
-    )
-
-    parser.add_argument(
-        "--max-seq-length",
-        type=int,
-        required=True,
-        help="Max sequence length for tokenization",
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        type=str,
-        default="./trained_model",
-        help="Directory to save the model",
-    )
-
-    parser.add_argument(
-        "--num-train-epochs",
-        type=int,
-        default=3,
-        help="Number of training epochs",
-    )
-
-    parser.add_argument(
-        "--per-device-train-batch-size",
-        type=int,
-        default=8,
-        help="Batch size for training",
-    )
-
-    parser.add_argument(
-        "--per-device-eval-batch-size",
-        type=int,
-        default=8,
-        help="Batch size for evaluation",
-    )
-
-    parser.add_argument(
-        "--learning-rate",
-        type=float,
-        default=5e-5,
-        help="Learning rate",
-    )
-
-    parser.add_argument(
-        "--hf-token",
-        type=str,
-        default=None,
-        help="Hugging Face token for accessing private models/datasets",
-    )
-
-    parser.add_argument(
-        "--push-to-hub",
-        action="store_true",
-        help="Push model to Hugging Face Hub after training",
-    )
-
-    parser.add_argument(
-        "--hub-model-id",
-        type=str,
-        default=None,
-        help="Model ID for pushing to Hugging Face Hub",
-    )
-
-    parser.add_argument(
-        "--fp16",
-        action="store_true",
-        help="Use mixed precision training",
-    )
-
-    parser.add_argument(
-        "--no-fp16",
-        action="store_false",
-        dest="fp16",
-        help="Disable mixed precision training",
-    )
-
-    parser.add_argument(
-        "--optimizer",
-        type=str,
-        default="adamw_hf",
-        choices=[
-            "adamw_hf",
-            "adamw_torch",
-            "adamw_torch_fused",
-            "adamw_apex_fused",
-            "adam",
-            "adamw_bnb_8bit",
-            "sgd",
-            "adafactor",
-        ],
-        help="Optimizer to use for training",
-    )
-
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    args = register_args()
-
-    # Load model config and apply overrides
-    config_overrides = json.loads(args.config_overrides)
-    print(
-        f"Loading model config from {args.model_id} with overrides: {config_overrides}"
-    )
     config = AutoConfig.from_pretrained(
-        args.model_id, token=args.hf_token, **config_overrides
+        MODEL_ID,
+        token=args.hub_token,
     )
 
-    print(f"Model config:\n{config}")
+    for k, v in OmegaConf.to_container(cfg["model"], resolve=True).items():
+        if hasattr(config, k):
+            setattr(config, k, v)
+        else:
+            logger.warning(f"Model config does not have attribute {k}. Skipping.")
+
+    logger.info(f"Model config:\n{config}")
 
     # Initialize tokenizer from the same model
-    print(f"Loading tokenizer from {args.model_id}")
-    tokenizer = AutoTokenizer.from_pretrained(args.model_id, token=args.hf_token)
+    logger.info(f"Loading tokenizer from {MODEL_ID}")
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, token=args.hub_token)
 
     # Add padding token if needed
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-        print("Padding token set to EOS token.")
+        logger.warning("Padding token set to EOS token.")
 
     # Initialize model with random weights
-    print(f"Initializing model from scratch with config from {args.model_id}")
+    logger.info(f"Initializing untrained model {MODEL_ID}")
+
     model = AutoModelForCausalLM.from_config(config)
-    print(f"Model initialized with {count_parameters(model)}")
+
+    logger.info(f"Model initialized with {count_parameters(model)}")
 
     # Load datasets
-    print(f"Loading training dataset from {args.dataset_url}")
-    train_samples = (
-        int(args.train_samples) if args.train_samples != "all" else args.train_samples
-    )
-    eval_samples = (
-        int(args.eval_samples) if args.eval_samples != "all" else args.eval_samples
+    logger.info(
+        f"Loading training dataset from {args.dataset_url} with {args.train_samples} samples"
     )
 
-    train_dataset = get_cached_dataset(
+    train_dataset = get_dataset(
         hub_url=args.dataset_url,
-        subset=args.dataset_subset,
+        subset=args.train_subset,
         features=args.features,
-        max_seq_length=args.max_seq_length,
+        max_seq_length=MAX_SEQ_LENGTH,
         tokenizer=tokenizer,
         split=args.train_split,
-        n_samples=train_samples,
-        token=args.hf_token,
-    )
-
-    eval_dataset = get_cached_dataset(
-        hub_url=args.dataset_url,
-        subset=args.dataset_subset,
-        features=args.features,
-        max_seq_length=args.max_seq_length,
-        tokenizer=tokenizer,
-        split=args.eval_split,
-        n_samples=eval_samples,
-        token=args.hf_token,
+        num_samples=args.train_samples,
+        token=args.hub_token,
+        trust_remote_code=args.trust_remote_code,
     )
 
     train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
+
+    logger.info(
+        f"Loading evaluation dataset from {args.dataset_url} with {args.eval_samples} samples"
+    )
+
+    eval_dataset = get_dataset(
+        hub_url=args.dataset_url,
+        subset=args.eval_subset,
+        features=args.features,
+        max_seq_length=MAX_SEQ_LENGTH,
+        tokenizer=tokenizer,
+        split=args.eval_split,
+        num_samples=args.eval_samples,
+        token=args.hub_token,
+        trust_remote_code=args.trust_remote_code,
+    )
+
     eval_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     # Data collator
@@ -248,33 +113,10 @@ if __name__ == "__main__":
         return_tensors="pt",
     )
 
-    # Set up training arguments
-    training_args = TrainingArguments(
-        output_dir=args.output_dir,
-        overwrite_output_dir=True,
-        num_train_epochs=args.num_train_epochs,
-        per_device_train_batch_size=args.per_device_train_batch_size,
-        per_device_eval_batch_size=args.per_device_eval_batch_size,
-        learning_rate=args.learning_rate,
-        fp16=args.fp16,
-        optim=args.optimizer,  # Add the optimizer parameter here
-        load_best_model_at_end=True,
-        eval_strategy="steps",
-        save_total_limit=2,
-        push_to_hub=args.push_to_hub,
-        hub_model_id=args.hub_model_id,
-        hub_token=args.hf_token,
-        lr_scheduler_type="cosine",
-        report_to="tensorboard",
-        logging_dir=args.output_dir,
-        logging_steps=200,
-        save_steps=200,
-    )
-
     # Initialize trainer
     trainer = Trainer(
         model=model,
-        args=training_args,
+        args=args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         tokenizer=tokenizer,
@@ -283,7 +125,7 @@ if __name__ == "__main__":
     )
 
     # Train the model
-    print("Starting training...")
+    logger.info("Starting training...")
     trainer.train()
 
     # Save the trained model
@@ -292,4 +134,4 @@ if __name__ == "__main__":
     if args.push_to_hub:
         trainer.push_to_hub()
 
-    print("Training completed successfully!")
+    logger.info("Training completed successfully!")

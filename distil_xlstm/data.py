@@ -16,33 +16,83 @@ def get_dataset(
     max_seq_length: int,
     tokenizer: AutoTokenizer,
     split: str,
-    n_samples: Union[int, Literal["all"]] = "all",
-    token=None,
+    num_samples: Union[int, Literal["all"]] = "all",
+    token: Optional[str] = None,
+    use_cache: bool = True,
+    cache_dir: str = "./.dataset_cache",
+    trust_remote_code: bool = False,
 ):
-    data_stream: Optional[IterableDataset] = None
+    # Create a unique cache key based on dataset parameters
+    cache_key_parts = [
+        hub_url,
+        str(subset),
+        split,
+        str(num_samples),
+        str(max_seq_length),
+        tokenizer.name_or_path,
+    ]
+    cache_key = hashlib.md5("_".join(cache_key_parts).encode()).hexdigest()
 
-    if subset is not None:
-        data_stream = load_dataset(
-            hub_url,
-            subset,
-            split=split,
-            token=token,
-            streaming=True,
-        )
-    else:
-        data_stream = load_dataset(
-            hub_url,
-            split=split,
-            token=token,
-            streaming=True,
-        )
+    # Create cache directories
+    os.makedirs(cache_dir, exist_ok=True)
+    raw_cache_path = os.path.join(cache_dir, f"raw_{cache_key}")
+    tokenized_cache_path = os.path.join(cache_dir, f"tokenized_{cache_key}")
 
-    data_points = []
+    # Try to load tokenized data from cache
+    if use_cache and os.path.exists(tokenized_cache_path):
+        try:
+            print(f"Loading cached tokenized dataset from {tokenized_cache_path}")
+            return load_from_disk(tokenized_cache_path)
+        except Exception as e:
+            print(f"Failed to load tokenized cache: {e}. Re-processing data.")
 
-    for data_point in tqdm(data_stream, desc=f"Loading the {split} data"):
-        data_points.append(data_point)
-        if n_samples != "all" and len(data_points) >= n_samples:
-            break
+    # Try to load raw data from cache
+    raw_data = None
+    if use_cache and os.path.exists(raw_cache_path):
+        try:
+            print(f"Loading cached raw dataset from {raw_cache_path}")
+            raw_data = load_from_disk(raw_cache_path)
+        except Exception as e:
+            print(f"Failed to load raw cache: {e}. Re-downloading data.")
+
+    # Download data if not cached
+    if raw_data is None:
+        data_stream: Optional[IterableDataset] = None
+
+        if subset is not None:
+            data_stream = load_dataset(
+                hub_url,
+                subset,
+                split=split,
+                streaming=True,
+                token=token,
+                trust_remote_code=trust_remote_code,
+            )
+        else:
+            data_stream = load_dataset(
+                hub_url,
+                split=split,
+                streaming=True,
+                token=token,
+                trust_remote_code=trust_remote_code,
+            )
+
+        data_points = []
+
+        for data_point in tqdm(data_stream, desc=f"Loading the {split} data"):
+            data_points.append(data_point)
+            if num_samples != "all" and len(data_points) >= num_samples:
+                break
+
+        raw_data = HfDataset.from_list(data_points)
+
+        # Cache the raw data
+        if use_cache:
+            try:
+                print(f"Caching raw dataset to {raw_cache_path}")
+                raw_data.save_to_disk(raw_cache_path)
+            except Exception as e:
+                print(f"Failed to cache raw data: {e}")
 
     def tokenize_text(element):
         encodings = tokenizer(
@@ -53,10 +103,8 @@ def get_dataset(
             return_length=True,
             return_tensors="pt",
         )
-
         return encodings
 
-    raw_data = HfDataset.from_list(data_points)
     tokenized_data = raw_data.map(
         tokenize_text,
         batched=True,
@@ -64,59 +112,12 @@ def get_dataset(
         desc=f"Tokenizing the {split} data",
     )
 
+    # Cache the tokenized data
+    if use_cache:
+        try:
+            print(f"Caching tokenized dataset to {tokenized_cache_path}")
+            tokenized_data.save_to_disk(tokenized_cache_path)
+        except Exception as e:
+            print(f"Failed to cache tokenized data: {e}")
+
     return tokenized_data
-
-
-def get_cached_dataset(
-    hub_url,
-    subset,
-    features,
-    max_seq_length,
-    tokenizer,
-    split,
-    n_samples,
-    token=None,
-):
-    """Get dataset from cache if available, otherwise download and cache it"""
-    # Create cache directory
-    cache_dir = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "dataset_cache"
-    )
-    os.makedirs(cache_dir, exist_ok=True)
-
-    # Create a unique cache ID based on dataset parameters
-    cache_id = f"{hub_url}_{subset or 'none'}_{split}"
-    cache_id += f"_{max_seq_length}_{tokenizer.name_or_path.replace('/', '_')}"
-    cache_id += f"_{n_samples}_{'_'.join(features)}"
-    # Hash the ID to ensure valid filename
-    cache_id = hashlib.md5(cache_id.encode()).hexdigest()
-
-    cache_path = os.path.join(cache_dir, cache_id)
-
-    # Check if cached dataset exists
-    if os.path.exists(cache_path):
-        print(f"Loading cached dataset from {cache_path}")
-        return load_from_disk(cache_path)
-
-    # Otherwise download and process
-    print(
-        f"Downloading dataset: {hub_url} (subset: {subset or 'None'})"
-        f" (split: {split}) (samples: {n_samples})"
-    )
-
-    dataset = get_dataset(
-        hub_url=hub_url,
-        subset=subset,
-        features=features,
-        max_seq_length=max_seq_length,
-        tokenizer=tokenizer,
-        split=split,
-        n_samples=n_samples,
-        token=token,
-    )
-
-    # Save to disk for future use
-    print(f"Saving dataset to {cache_path}")
-    dataset.save_to_disk(cache_path)
-
-    return dataset
