@@ -126,11 +126,16 @@ class KDTrainer(Trainer):
                     student_hidden_states=student_h,
                 )
             elif self.args.alignment_loss == "cosine":
+                # Flatten the tensors from [batch, seq, hidden] to [batch*seq, hidden]
+                student_h_flat = rearrange(student_h, "b s h -> (b s) h")
+                teacher_h_flat = rearrange(teacher_h, "b s h -> (b s) h")
+
+                # Create target tensor with same batch size as flattened tensors
+                target = torch.ones(student_h_flat.shape[0], device=student_h.device)
+
                 # Compute the cosine similarity between the teacher and student hidden states
                 alignment_loss = self.alignment_criterion(
-                    student_h,
-                    teacher_h,
-                    target=torch.ones(teacher_h.shape[0], device=teacher_h.device),
+                    student_h_flat, teacher_h_flat, target=target
                 )
 
             total_loss += alignment_loss * self.args.alignment_weight

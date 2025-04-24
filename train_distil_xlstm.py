@@ -129,9 +129,6 @@ def main(cfg: DictConfig):
         **config_dict,
     )
 
-    logger.info("Model configuration:")
-    pprint(config.to_dict())
-
     student_model = (
         DistilxLSTMForCausalLM.init_for_distillation_with_freezed_head_and_embedding(
             config=config,
