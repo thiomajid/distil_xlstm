@@ -46,7 +46,11 @@ class KDTrainer(Trainer):
         return output
 
     def compute_loss(
-        self, model: DistilxLSTMForCausalLM, inputs, return_outputs=False, **kwargs
+        self,
+        model: DistilxLSTMForCausalLM,
+        inputs,
+        return_outputs=False,
+        **kwargs,
     ):
         student_output: xLSTMCausalLMOutput = model(
             **inputs,
@@ -56,7 +60,7 @@ class KDTrainer(Trainer):
         teacher_output = self._teacher_forward(inputs)
 
         metrics = dict()
-        task_loss = student_output.loss
+        task_loss = student_output["loss"]
         task_weight = 1
         total_loss = torch.tensor(
             0.0,
@@ -64,11 +68,11 @@ class KDTrainer(Trainer):
             dtype=task_loss.dtype,
         )
 
-        is_log_step = self.state.global_step % self.args.logging_steps == 0
+        is_logging_step = self.state.global_step % self.args.logging_steps == 0
 
         # # Compute KL divergence loss
         if self.args.compute_kl_loss:
-            student_logits = rearrange(student_output.logits, "b s d -> (b s) d")
+            student_logits = rearrange(student_output["logits"], "b s d -> (b s) d")
             teacher_logits = rearrange(
                 teacher_output.logits.detach(), "b s d -> (b s) d"
             )
@@ -94,9 +98,9 @@ class KDTrainer(Trainer):
         # # Compute Frobenius loss
         if self.args.compute_frobenius_loss:
             student_h = (
-                student_output.hidden_states_per_block
+                student_output["hidden_states_per_block"]
                 if self.args.frobenius_norm_computation == "ratio"
-                else student_output.hidden_states
+                else student_output["hidden_states"]
             )
 
             frobenius_loss, norm_per_block = self.frobenius_criterion(
@@ -126,7 +130,7 @@ class KDTrainer(Trainer):
                 }
 
                 # Log the Frobenius norm per block
-                if is_log_step:
+                if is_logging_step:
                     for key, value in norm_dict.items():
                         self.tb_writer.add_scalar(
                             key,
@@ -146,7 +150,7 @@ class KDTrainer(Trainer):
         )
 
         # Log the metrics
-        if is_log_step:
+        if is_logging_step:
             for key, value in metrics.items():
                 self.tb_writer.add_scalar(
                     f"train/{key}",

@@ -13,4 +13,5 @@ wheels/
 # Custom files
 **.ipynb
 **.bib
+**/*.tex
 logs/

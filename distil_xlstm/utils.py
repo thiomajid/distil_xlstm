@@ -1,32 +1,30 @@
 import subprocess
-from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, TypedDict
 
 import torch
 from torch import nn
-from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
-@dataclass
-class xLSTMCausalLMOutput(CausalLMOutputWithPast):
+class xLSTMCausalLMOutput(TypedDict):
+    logits: torch.Tensor
+    loss: Optional[torch.Tensor] = None
+    hidden_states: Optional[torch.Tensor] = None
     hidden_states_per_block: Optional[torch.Tensor] = None
 
 
 def count_parameters(model: nn.Module):
     total_params = sum(p.numel() for p in model.parameters())
     return {
-        "total_params": total_params,
-        "in_billions": total_params / 1e9,
-        "in_millions": total_params / 1e6,
+        "billions": total_params / 1e9,
+        "millions": total_params / 1e6,
     }
 
 
 def count_trainable_parameters(model: nn.Module, precision: int = 2):
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     return {
-        "trainable_params": round(trainable_params, precision),
-        "in_millions": round(trainable_params / 1e6, precision),
-        "in_billions": round(trainable_params / 1e9, precision),
+        "millions": round(trainable_params / 1e6, precision),
+        "billions": round(trainable_params / 1e9, precision),
     }
 
 
@@ -71,3 +69,19 @@ def download_safetensors(url: str, out_file: str = "./model.safetensors") -> boo
     except FileNotFoundError:
         print("curl command not found")
         return False
+
+
+def next_multiple_of(x: int, multiple: int) -> int:
+    """
+    Returns the next multiple of `multiple` that is greater than or equal to `x`.
+
+    Args:
+    ---
+        x (int): The number to round up.
+        multiple (int): The multiple to round up to.
+
+    Returns:
+    ---
+        int: The next multiple of `multiple` that is greater than or equal to `x`.
+    """
+    return ((x + multiple - 1) // multiple) * multiple

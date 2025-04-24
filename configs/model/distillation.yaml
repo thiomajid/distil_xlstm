@@ -1,10 +1,10 @@
 use_tfla: true
 xlstm_config:
-  vocab_size: 32_000
+  vocab_size: 49_152
   context_length: 256
-  num_blocks: 6
+  num_blocks: 12
   embedding_dim: 256
-  slstm_at: [0, 2, 4]
+  # slstm_at: [0, 2, 4]
 
   mlstm_block:
     mlstm:

@@ -16,14 +16,14 @@ from transformers import (
 )
 from xlstm import xLSTMBlockStack
 from xlstm.components.init import small_init_init_
-from xlstm.xlstm_large.components import soft_cap
-from xlstm.xlstm_large.model import xLSTMLarge, xLSTMLargeConfig
+from xlstm.xlstm_large.model import xLSTMLargeConfig
 
 from distil_xlstm.config import DistilxLSTMConfig
 from distil_xlstm.optim.loss import FrobeniusNormComputation
 from distil_xlstm.utils import (
     count_parameters,
     count_trainable_parameters,
+    next_multiple_of,
     xLSTMCausalLMOutput,
 )
 
@@ -35,12 +35,9 @@ class DistilxLSTMModel(PreTrainedModel):
         self.config = config
 
         # Code from original xLSTMLMModel __init__ method
-        # Same initialization has xLSTMLMModel but we use the individual components to be able
-        # to use things like attention_mask coming from the tokenization step
         self.embedding = nn.Embedding(
             num_embeddings=config.xlstm_cfg.vocab_size,
             embedding_dim=config.xlstm_cfg.embedding_dim,
-            # padding_idx=config.pad_token_id,
         )
 
         self.embedding_dropout = (
@@ -50,29 +47,17 @@ class DistilxLSTMModel(PreTrainedModel):
         )
 
         self.backbone = xLSTMBlockStack(config=config.xlstm_cfg)
-        self.backbone.out_norm = self.backbone.post_blocks_norm
-
-        # Remove the post_blocks_norm layer from the backbone for compatibility with xLSTMLarge
-        # naming convention of the out_norm layer to leverage python's dynamic attributes
-        self.backbone.post_blocks_norm = None
-        del self.backbone.post_blocks_norm
 
     def forward(self, x: torch.Tensor):
-        h = self.embedding(x)
-        h = self.embedding_dropout(h)
+        h_t = self.embedding(x)
+        h_t = self.embedding_dropout(h_t)
 
-        for block in self.backbone.blocks:
-            h = block(h)
+        for block in self.backbone:
+            h_t = block(h_t)
 
-        h = self.backbone.out_norm(h)
+        h_t = self.backbone.post_blocks_norm(h_t)
 
-        return h
-
-    def backbone_forward(self, x: torch.Tensor):
-        for block in self.backbone.blocks:
-            x = block(x)
-
-        return self.backbone.out_norm(x)
+        return h_t
 
     def reset_parameters(self):
         small_init_init_(
@@ -80,8 +65,8 @@ class DistilxLSTMModel(PreTrainedModel):
             dim=self.config.xlstm_cfg.embedding_dim,
         )
 
-        if not isinstance(self.backbone.out_norm, nn.Identity):
-            self.backbone.out_norm.reset_parameters()
+        if not isinstance(self.backbone.post_blocks_norm, nn.Identity):
+            self.backbone.post_blocks_norm.reset_parameters()
 
         for block in self.backbone.blocks:
             block.reset_parameters()
@@ -90,8 +75,8 @@ class DistilxLSTMModel(PreTrainedModel):
         for block in self.backbone.blocks:
             block.reset_parameters()
 
-        if not isinstance(self.backbone.out_norm, nn.Identity):
-            self.backbone.out_norm.reset_parameters()
+        if not isinstance(self.backbone.post_blocks_norm, nn.Identity):
+            self.backbone.post_blocks_norm.reset_parameters()
 
 
 class DistilxLSTMForCausalLM(PreTrainedModel):
@@ -101,43 +86,28 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         super().__init__(config)
 
         self.config = config
-        self.num_blocks = (
-            config.tfla_config.num_blocks
-            if config.use_tfla
-            else config.xlstm_cfg.num_blocks
+        self.num_blocks = config.xlstm_cfg.num_blocks
+
+        self.xlstm = DistilxLSTMModel(config=config)
+        self.lm_head = nn.Linear(
+            in_features=config.xlstm_cfg.embedding_dim,
+            out_features=config.xlstm_cfg.vocab_size,
+            bias=False,
         )
 
-        self.xlstm = (
-            xLSTMLarge(config=config.tfla_config)
-            if config.use_tfla
-            else DistilxLSTMModel(config=config)
-        )
-
-        self.maybe_lm_head = (
-            nn.Identity()
-            if config.use_tfla
-            else nn.Linear(
-                in_features=config.xlstm_cfg.embedding_dim,
-                out_features=config.xlstm_cfg.vocab_size,
-                bias=False,
-            )
-        )
-
-        if config.xlstm_cfg.tie_weights and not config.use_tfla:
-            self.maybe_lm_head.weight = self.xlstm.embedding.weight
+        if config.xlstm_cfg.tie_weights:
+            self.lm_head.weight = self.xlstm.embedding.weight
 
     def reset_parameters(self):
-        if not self.config.use_tfla:
-            self.xlstm.reset_parameters()
+        self.xlstm.reset_parameters()
 
-            if not self.config.xlstm_cfg.tie_weights:
-                small_init_init_(
-                    self.maybe_lm_head.weight, dim=self.config.xlstm_cfg.embedding_dim
-                )
+        if not self.config.xlstm_cfg.tie_weights:
+            small_init_init_(
+                self.lm_head.weight, dim=self.config.xlstm_cfg.embedding_dim
+            )
 
     def reset_parameters_for_distillation(self):
-        if not self.config.use_tfla:
-            self.xlstm.reset_parameters_for_distillation()
+        self.xlstm.reset_parameters_for_distillation()
 
     def forward(
         self,
@@ -145,51 +115,48 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         labels: Optional[torch.Tensor] = None,
         frobenius_computation: Optional[FrobeniusNormComputation] = None,
         **kwargs,
-    ):
-        hidden_states: torch.Tensor = self.xlstm.embedding(input_ids)
+    ) -> xLSTMCausalLMOutput:
+        h_t: torch.Tensor = self.xlstm.embedding(input_ids)
+        h_t = self.xlstm.embedding_dropout(h_t)
 
-        if not self.config.use_tfla:
-            hidden_states = self.xlstm.embedding_dropout(hidden_states)
-
-        hidden_states_per_block = torch.empty(
-            size=(
-                self.num_blocks,
-                *hidden_states.shape,
-            ),
-            device=hidden_states.device,
-            dtype=hidden_states.dtype,
+        hidden_states_per_block = (
+            torch.empty(
+                size=(
+                    self.num_blocks,
+                    *h_t.shape,
+                ),
+                device=h_t.device,
+                dtype=h_t.dtype,
+            )
+            if frobenius_computation == "ratio"
+            else None
         )
 
+        logits: Optional[torch.TensorBase] = None
         if frobenius_computation == "ratio":
+            hidden_states_per_block_list = []
+            for _, block in enumerate(self.xlstm.backbone.blocks):
+                block_state = block(h_t)
+                h_t = block_state  # Update hidden_states for next iteration
+                hidden_states_per_block_list.append(block_state)
+
+            # Stack the collected outputs
+            hidden_states_per_block = torch.stack(hidden_states_per_block_list)
             hidden_states_per_block.requires_grad_(True)
 
-            if self.config.use_tfla:
-                for block_idx, block in enumerate(self.xlstm.backbone.blocks):
-                    hidden_states, block_state_new = block(hidden_states)
-                    hidden_states_per_block[block_idx] = block_state_new
-            else:
-                for block_idx, block in enumerate(self.xlstm.backbone.blocks):
-                    blk_out = block(hidden_states)
-                    hidden_states_per_block[block_idx] = blk_out
-
-            last_hidden_state = self.xlstm.backbone.out_norm(
+            last_hidden_state = self.xlstm.backbone.post_blocks_norm(
                 hidden_states_per_block[-1]
             )
 
-            hidden_states = last_hidden_state
-        else:
-            if self.config.use_tfla:
-                hidden_states, _ = self.xlstm.backbone(hidden_states)
-                hidden_states = self.xlstm.lm_head(hidden_states)
-                logits = soft_cap(
-                    hidden_states, self.config.tfla_config.output_logit_soft_cap
-                )
-            else:
-                for block in self.xlstm.backbone.blocks:
-                    hidden_states = block(hidden_states)
+            h_t = last_hidden_state
+            logits = self.lm_head(h_t)
 
-                hidden_states = self.xlstm.backbone.out_norm(hidden_states)
-                logits = self.maybe_lm_head(hidden_states)
+        elif frobenius_computation == "average":
+            for block in self.xlstm.backbone.blocks:
+                h_t = block(h_t)
+
+            h_t = self.xlstm.backbone.post_blocks_norm(h_t)
+            logits = self.lm_head(h_t)
 
         loss = None
         if labels is not None:
@@ -207,15 +174,14 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
             loss = F.cross_entropy(
                 input=shift_logits,
                 target=shift_labels,
-                # ignore_index=self.config.pad_token_id,
             )
 
-        return xLSTMCausalLMOutput(
-            logits=logits,
-            loss=loss,
-            hidden_states=hidden_states,
-            hidden_states_per_block=hidden_states_per_block,
-        )
+        return {
+            "logits": logits,
+            "loss": loss,
+            "hidden_states": h_t,
+            "hidden_states_per_block": hidden_states_per_block,
+        }
 
     @staticmethod
     def init_for_distillation(
@@ -246,9 +212,9 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
                 else list(range(0, num_blocks - 1, 2))
             )
 
-            teacher_num_heads = teacher_config.num_attention_heads
-            while teacher_num_heads % 4 != 0:
-                teacher_num_heads += 1
+            teacher_num_heads = next_multiple_of(
+                teacher_config.num_attention_heads, multiple=4
+            )
 
             # Having too many heads is not a problem per se, but it makes the hidden dimensions
             # too small but also increases the number of computational units
@@ -298,7 +264,7 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         max_sequence_length: int,
         slstm_pos: list[int] | None = None,
         v2: bool = True,
-        use_tfla: bool = True,
+        use_tfla: bool = False,
     ) -> "DistilxLSTMForCausalLM":
         if use_tfla and not v2:
             raise ValueError(
@@ -320,24 +286,22 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         model.token_embedding.load_state_dict(
             teacher_model.model.embed_tokens.state_dict()
         )
-        model.maybe_lm_head.load_state_dict(teacher_model.lm_head.state_dict())
+        model.lm_head.load_state_dict(teacher_model.lm_head.state_dict())
 
         if config.xlstm_cfg.tie_weights:
-            model.maybe_lm_head.weight = model.token_embedding.weight
+            model.lm_head.weight = model.token_embedding.weight
 
         model.token_embedding.requires_grad_(False)
-        model.maybe_lm_head.requires_grad_(False)
+        model.lm_head.requires_grad_(False)
 
         print(
-            f"are lm_head weights equal ? {torch.allclose(model.maybe_lm_head.weight, teacher_model.lm_head.weight)}"
+            f"are lm_head weights equal ? {torch.allclose(model.lm_head.weight, teacher_model.lm_head.weight)}"
         )
         print(
             f"are embedding weights equal ? {torch.allclose(model.token_embedding.weight, teacher_model.model.embed_tokens.weight)}"
         )
 
-        print(
-            f"xLSTM lm_head requires grad ? {model.maybe_lm_head.weight.requires_grad}"
-        )
+        print(f"xLSTM lm_head requires grad ? {model.lm_head.weight.requires_grad}")
         print(
             f"xLSTM embedding requires grad ? {model.token_embedding.weight.requires_grad}"
         )

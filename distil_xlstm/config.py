@@ -10,7 +10,6 @@ from xlstm import (
     sLSTMLayerConfig,
     xLSTMLMModelConfig,
 )
-from xlstm.xlstm_large import xLSTMLargeConfig
 
 
 class DistilxLSTMConfig(PretrainedConfig):
@@ -18,9 +17,7 @@ class DistilxLSTMConfig(PretrainedConfig):
 
     def __init__(
         self,
-        use_tfla: bool = False,
         xlstm_cfg: Optional[xLSTMLMModelConfig] = None,
-        tfla_config: Optional[xLSTMLargeConfig] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -28,21 +25,13 @@ class DistilxLSTMConfig(PretrainedConfig):
         if xlstm_cfg is None:
             xlstm_cfg = xLSTMLMModelConfig()
 
-        if tfla_config is None:
-            tfla_config = xLSTMLargeConfig(
-                embedding_dim=1, num_heads=1, num_blocks=1, vocab_size=1
-            )
-
         self.xlstm_cfg = xlstm_cfg
-        self.use_tfla = use_tfla
-        self.tfla_config = tfla_config
 
     def to_dict(self) -> Dict[str, Any]:
         output = super().to_dict()
 
         # Making sure that 'xlstm_cfg' is serialized
         output["xlstm_cfg"] = asdict(self.xlstm_cfg)
-        output["tfla_config"] = asdict(self.tfla_config) if self.tfla_config else None
         return output
 
     @classmethod
@@ -50,10 +39,7 @@ class DistilxLSTMConfig(PretrainedConfig):
         xlstm_config_dict: Dict[str, any] = config_dict.pop("xlstm_config")
         xlstm_cfg = cls.parse_xlstm_config_dict(xlstm_config_dict)
 
-        tfla_dict = config_dict.pop("tfla_config")
-        tfla_config = xLSTMLargeConfig(**tfla_dict) if tfla_dict else None
-
-        return cls(xlstm_cfg=xlstm_cfg, tfla_config=tfla_config, **config_dict)
+        return cls(xlstm_cfg=xlstm_cfg, **config_dict)
 
     @staticmethod
     def parse_xlstm_config_dict(config_dict: Dict[str, any]):
