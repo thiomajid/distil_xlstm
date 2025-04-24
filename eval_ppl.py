@@ -157,7 +157,7 @@ def evaluate_perplexity(
     }
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="eval_config")
+@hydra.main(version_base=None, config_path="./configs", config_name="eval_config")
 def main(cfg: DictConfig):
     config = PerplexityEvaluationConfig(
         **OmegaConf.to_container(cfg["eval"], resolve=True)
