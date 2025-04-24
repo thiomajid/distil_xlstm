@@ -21,6 +21,7 @@ from distil_xlstm.trainer import KDArguments, KDTrainer
 from distil_xlstm.utils import (
     count_parameters,
     count_trainable_parameters,
+    next_multiple_of,
     parse_xlstm_config_dict,
 )
 
@@ -95,10 +96,41 @@ def main(cfg: DictConfig):
     logger.info("Creating student model...")
     config_dict = OmegaConf.to_container(cfg["model"], resolve=True)
     xlstm_dict = config_dict.pop("xlstm_config", None)
+
+    teacher_config = teacher_model.config
+    xlstm_dict["vocab_size"] = teacher_config.vocab_size
+    xlstm_dict["embedding_dim"] = teacher_config.hidden_size
+
+    if config_dict["num_blocks_init"] == "same":
+        xlstm_dict["num_blocks"] = teacher_config.num_hidden_layers
+    elif config_dict["num_blocks_init"] == "half":
+        xlstm_dict["num_blocks"] = teacher_config.num_hidden_layers // 2
+    elif config_dict["num_blocks_init"] == "custom":
+        pass
+    else:
+        raise ValueError(
+            f"num_blocks_init should be one of ['same', 'half', 'custom'], but got {config_dict['num_blocks_init']}"
+        )
+
+    rounded_teacher_num_heads = next_multiple_of(
+        teacher_config.num_attention_heads, multiple=4
+    )
+
+    # Having too many heads is not a problem per se, but it makes the hidden dimensions
+    # too small but also increases the number of computational units
+    # dividing by 4 is a good trade-off
+    num_heads = rounded_teacher_num_heads // 4
+    xlstm_dict["mlstm_block"]["mlstm"]["num_heads"] = num_heads
+    xlstm_dict["slstm_block"]["slstm"]["num_heads"] = num_heads
+    config_dict["pad_token_id"] = tokenizer.pad_token_id
+
     config = DistilxLSTMConfig(
         xlstm_config=parse_xlstm_config_dict(xlstm_dict),
         **config_dict,
     )
+
+    logger.info("Model configuration:")
+    pprint(config.to_dict())
 
     student_model = (
         DistilxLSTMForCausalLM.init_for_distillation_with_freezed_head_and_embedding(
@@ -107,9 +139,7 @@ def main(cfg: DictConfig):
             tokenizer=tokenizer,
         )
     )
-
-    logger.info("Model configuration:")
-    pprint(student_model.config.to_dict())
+    pprint(student_model)
 
     logger.info(f"Student model total parameters: {count_parameters(student_model)}")
 
