@@ -210,7 +210,7 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         model.lm_head.load_state_dict(teacher_model.lm_head.state_dict())
 
         if config.xlstm_config.tie_weights:
-            model.lm_head.weight = model.token_embedding.weight
+            model.lm_head.weight = model.xlstm.embedding.weight
 
         model.xlstm.embedding.requires_grad_(False)
         model.lm_head.requires_grad_(False)
@@ -224,7 +224,7 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
 
         print(f"xLSTM lm_head requires grad ? {model.lm_head.weight.requires_grad}")
         print(
-            f"xLSTM embedding requires grad ? {model.token_embedding.weight.requires_grad}"
+            f"xLSTM embedding requires grad ? {model.xlstm.embedding.weight.requires_grad}"
         )
 
         print(f"Model number of parameters: \n{count_parameters(model)}")
