@@ -1,21 +1,19 @@
-use_tfla: true
 xlstm_config:
-  vocab_size: 49_152
-  context_length: 256
-  num_blocks: 12
-  embedding_dim: 256
-  # slstm_at: [0, 2, 4]
+  vocab_size: 512
+  context_length: 128
+  num_blocks: 6
+  embedding_dim: 32
 
   mlstm_block:
     mlstm:
       conv1d_kernel_size: 4
       qkv_proj_blocksize: 32
-      num_heads: 4
+      num_heads: 8
 
   slstm_block:
     slstm:
-      backend: "cuda"
-      num_heads: 4
+      backend: "vanilla"
+      num_heads: 8
       conv1d_kernel_size: 4
       bias_init: "powerlaw_blockdependent"
 

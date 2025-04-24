@@ -24,7 +24,7 @@ from distil_xlstm.utils import (
 )
 
 
-@hydra.main(config_path="../configs", config_name="train_config")
+@hydra.main(config_path="./configs", config_name="train_config")
 def main(cfg: DictConfig):
     # Set up logging
     logging.basicConfig(
@@ -60,42 +60,6 @@ def main(cfg: DictConfig):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
         logger.warning("Padding token set to EOS token.")
-
-    logger.info(
-        f"Loading training dataset from {args.dataset_url} with {args.train_samples} samples"
-    )
-
-    train_dataset = get_dataset(
-        hub_url=args.dataset_url,
-        subset=args.train_subset,
-        features=args.features,
-        max_seq_length=config.xlstm_cfg.context_length,
-        tokenizer=tokenizer,
-        split=args.train_split,
-        num_samples=args.train_samples,
-        token=args.hub_token,
-        trust_remote_code=args.trust_remote_code,
-    )
-
-    train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
-
-    logger.info(
-        f"Loading evaluation dataset from {args.dataset_url} with {args.eval_samples} samples"
-    )
-
-    eval_dataset = get_dataset(
-        hub_url=args.dataset_url,
-        subset=args.eval_subset,
-        features=args.features,
-        max_seq_length=config.xlstm_cfg.context_length,
-        tokenizer=tokenizer,
-        split=args.eval_split,
-        num_samples=args.eval_samples,
-        token=args.hub_token,
-        trust_remote_code=args.trust_remote_code,
-    )
-
-    eval_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     # Model instances
     logger.info("Loading teacher model...")
@@ -138,7 +102,6 @@ def main(cfg: DictConfig):
             config=config,
             teacher_model=teacher_model,
             tokenizer=tokenizer,
-            v2=args.v2_init,
         )
     )
 
@@ -147,6 +110,42 @@ def main(cfg: DictConfig):
     logger.info(
         f"Student model trainable parameters: {count_trainable_parameters(student_model)}"
     )
+
+    logger.info(
+        f"Loading training dataset from {args.dataset_url} with {args.train_samples} samples"
+    )
+
+    train_dataset = get_dataset(
+        hub_url=args.dataset_url,
+        subset=args.train_subset,
+        features=args.features,
+        max_seq_length=config.xlstm_cfg.context_length,
+        tokenizer=tokenizer,
+        split=args.train_split,
+        num_samples=args.train_samples,
+        token=args.hub_token,
+        trust_remote_code=args.trust_remote_code,
+    )
+
+    train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
+
+    logger.info(
+        f"Loading evaluation dataset from {args.dataset_url} with {args.eval_samples} samples"
+    )
+
+    eval_dataset = get_dataset(
+        hub_url=args.dataset_url,
+        subset=args.eval_subset,
+        features=args.features,
+        max_seq_length=config.xlstm_cfg.context_length,
+        tokenizer=tokenizer,
+        split=args.eval_split,
+        num_samples=args.eval_samples,
+        token=args.hub_token,
+        trust_remote_code=args.trust_remote_code,
+    )
+
+    eval_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     logger.info("Initializing KD trainer...")
     data_collator = DataCollatorForLanguageModeling(
@@ -168,8 +167,8 @@ def main(cfg: DictConfig):
 
     if args.frobenius_schedule == "decreasing":
         frobenius_weight_scheduler = ScalarAnnealingScheduler(
-            initial_value=args.frobenius_weight,
-            final_value=args.final_frobenius_weight,
+            initial_value=args.alignment_weight,
+            final_value=args.final_alignment_weight,
             delta=args.delta,
             schedule_fn_variant="logarithmic",
         )

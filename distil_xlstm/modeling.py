@@ -16,12 +16,11 @@ from xlstm import xLSTMBlockStack
 from xlstm.components.init import small_init_init_
 
 from distil_xlstm.config import DistilxLSTMConfig
-from distil_xlstm.optim.loss import FrobeniusNormComputation
 from distil_xlstm.utils import (
+    DistilxLSTMCausalLMOutput,
     count_parameters,
     count_trainable_parameters,
     next_multiple_of,
-    xLSTMCausalLMOutput,
 )
 
 
@@ -111,50 +110,22 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         self,
         input_ids: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
-        frobenius_computation: Optional[FrobeniusNormComputation] = None,
+        output_hidden_states: bool = False,
         **kwargs,
-    ) -> xLSTMCausalLMOutput:
+    ) -> DistilxLSTMCausalLMOutput:
         h_t: torch.Tensor = self.xlstm.embedding(input_ids)
         h_t = self.xlstm.embedding_dropout(h_t)
 
-        hidden_states_per_block = (
-            torch.empty(
-                size=(
-                    self.num_blocks,
-                    *h_t.shape,
-                ),
-                device=h_t.device,
-                dtype=h_t.dtype,
-            )
-            if frobenius_computation == "ratio"
-            else None
-        )
+        hidden_states = () if output_hidden_states else None
 
-        logits: Optional[torch.TensorBase] = None
-        if frobenius_computation == "ratio":
-            hidden_states_per_block_list = []
-            for _, block in enumerate(self.xlstm.backbone.blocks):
-                block_state = block(h_t)
-                h_t = block_state  # Update hidden_states for next iteration
-                hidden_states_per_block_list.append(block_state)
+        for block in self.xlstm.backbone.blocks:
+            block_state = block(h_t)
+            h_t = block_state
+            if output_hidden_states:
+                hidden_states = hidden_states + (block_state,)
 
-            # Stack the collected outputs
-            hidden_states_per_block = torch.stack(hidden_states_per_block_list)
-            hidden_states_per_block.requires_grad_(True)
-
-            last_hidden_state = self.xlstm.backbone.post_blocks_norm(
-                hidden_states_per_block[-1]
-            )
-
-            h_t = last_hidden_state
-            logits = self.lm_head(h_t)
-
-        elif frobenius_computation == "average":
-            for block in self.xlstm.backbone.blocks:
-                h_t = block(h_t)
-
-            h_t = self.xlstm.backbone.post_blocks_norm(h_t)
-            logits = self.lm_head(h_t)
+        h_t = self.xlstm.backbone.post_blocks_norm(h_t)
+        logits = self.lm_head(h_t)
 
         loss = None
         if labels is not None:
@@ -175,10 +146,10 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
             )
 
         return {
-            "logits": logits,
             "loss": loss,
-            "hidden_states": h_t,
-            "hidden_states_per_block": hidden_states_per_block,
+            "logits": logits,
+            "last_hidden_state": h_t,
+            "hidden_states": hidden_states,
         }
 
     @staticmethod
@@ -187,26 +158,31 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         config: DistilxLSTMConfig,
         teacher_config: AutoConfig,
         tokenizer: AutoTokenizer,
-        v2: bool = True,
     ):
         config.xlstm_cfg.vocab_size = teacher_config.vocab_size
         config.xlstm_cfg.embedding_dim = teacher_config.hidden_size
 
-        if v2:
-            num_blocks = teacher_config.num_hidden_layers // 2
-            config.xlstm_cfg.num_blocks = num_blocks
-
-            teacher_num_heads = next_multiple_of(
-                teacher_config.num_attention_heads, multiple=4
+        if config.num_blocks_init == "same":
+            config.xlstm_cfg.num_blocks = teacher_config.num_hidden_layers
+        elif config.num_blocks_init == "half":
+            config.xlstm_cfg.num_blocks = teacher_config.num_hidden_layers // 2
+        elif config.num_blocks_init == "custom":
+            pass
+        else:
+            raise ValueError(
+                f"num_blocks_init should be one of ['same', 'half', 'custom'], but got {config.num_blocks_init}"
             )
 
-            # Having too many heads is not a problem per se, but it makes the hidden dimensions
-            # too small but also increases the number of computational units
-            # dividing by 4 is a good trade-off
-            num_heads = teacher_num_heads // 4
+        rounded_teacher_num_heads = next_multiple_of(
+            teacher_config.num_attention_heads, multiple=4
+        )
 
-            config.xlstm_cfg.mlstm_block.mlstm.num_heads = num_heads
-            config.xlstm_cfg.slstm_block.slstm.num_heads = num_heads
+        # Having too many heads is not a problem per se, but it makes the hidden dimensions
+        # too small but also increases the number of computational units
+        # dividing by 4 is a good trade-off
+        num_heads = rounded_teacher_num_heads // 4
+        config.xlstm_cfg.mlstm_block.mlstm.num_heads = num_heads
+        config.xlstm_cfg.slstm_block.slstm.num_heads = num_heads
 
         config.pad_token_id = tokenizer.pad_token_id
         model = DistilxLSTMForCausalLM(config=config)
@@ -220,14 +196,12 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         config: DistilxLSTMConfig,
         teacher_model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
-        v2: bool = True,
     ) -> "DistilxLSTMForCausalLM":
         model = DistilxLSTMForCausalLM.init_for_distillation(
             config=config,
             teacher_config=teacher_model.config,
             tokenizer=tokenizer,
             return_xlstm_config=True,
-            v2=v2,
         )
 
         model = model.to(teacher_model.device)

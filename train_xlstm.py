@@ -23,7 +23,7 @@ from distil_xlstm.utils import (
 )
 
 
-@hydra.main(config_path="../configs", config_name="train_config")
+@hydra.main(config_path="./configs", config_name="train_config")
 def main(cfg: DictConfig):
     # Set up logging
     logging.basicConfig(
@@ -62,6 +62,13 @@ def main(cfg: DictConfig):
 
     config.pad_token_id = tokenizer.pad_token_id
 
+    # Model instance
+    logger.info("Creating xLSTM model...")
+    model = DistilxLSTMForCausalLM(config)
+
+    logger.info(f"model total parameters: {count_parameters(model)}")
+    logger.info(f"model trainable parameters: {count_trainable_parameters(model)}")
+
     logger.info(
         f"Loading training dataset from {args.dataset_url} with {args.train_samples} samples"
     )
@@ -97,14 +104,6 @@ def main(cfg: DictConfig):
     )
 
     eval_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
-
-    # Model instances
-
-    logger.info("Creating xLSTM model...")
-    model = DistilxLSTMForCausalLM(config)
-
-    logger.info(f"model total parameters: {count_parameters(model)}")
-    logger.info(f"model trainable parameters: {count_trainable_parameters(model)}")
 
     logger.info("Initializing trainer...")
     data_collator = DataCollatorForLanguageModeling(

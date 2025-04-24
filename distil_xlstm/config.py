@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from transformers import PretrainedConfig
 from xlstm import (
@@ -11,12 +11,15 @@ from xlstm import (
     xLSTMLMModelConfig,
 )
 
+NumBlocksInitKind = Literal["same", "half", "custom"]
+
 
 class DistilxLSTMConfig(PretrainedConfig):
     model_type = "xlstm"
 
     def __init__(
         self,
+        num_blocks_init: NumBlocksInitKind = "same",
         xlstm_cfg: Optional[xLSTMLMModelConfig] = None,
         **kwargs,
     ):
@@ -25,6 +28,7 @@ class DistilxLSTMConfig(PretrainedConfig):
         if xlstm_cfg is None:
             xlstm_cfg = xLSTMLMModelConfig()
 
+        self.num_blocks_init = num_blocks_init
         self.xlstm_cfg = xlstm_cfg
 
     def to_dict(self) -> Dict[str, Any]:

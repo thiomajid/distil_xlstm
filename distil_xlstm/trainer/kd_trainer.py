@@ -10,7 +10,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from distil_xlstm.modeling import DistilxLSTMForCausalLM
 from distil_xlstm.optim.loss import FrobeniusLoss
 from distil_xlstm.trainer.arguments import KDArguments
-from distil_xlstm.utils import xLSTMCausalLMOutput
+from distil_xlstm.utils import DistilxLSTMCausalLMOutput
 
 
 class KDTrainer(Trainer):
@@ -33,12 +33,24 @@ class KDTrainer(Trainer):
         self.teacher = teacher_model
 
         self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
-        self.frobenius_criterion = FrobeniusLoss()
-        self._teacher_num_attention_layers = len(teacher_model.model.layers)
+        self.alignment_criterion = (
+            self._get_alignment_criterion() if args.compute_alignment_loss else None
+        )
 
         self.tb_writer = SummaryWriter(
             log_dir=args.logging_dir, filename_suffix="manual_logs"
         )
+
+    def _get_alignment_criterion(self):
+        if self.args.alignment_loss == "frobenius":
+            return FrobeniusLoss(reduction=self.args.frobenius_norm_reduction)
+        elif self.args.alignment_loss == "cosine":
+            return torch.nn.CosineEmbeddingLoss(reduction="mean")
+        else:
+            raise ValueError(
+                f"Unknown alignment loss: {self.args.alignment_loss}. "
+                f"Supported losses are: frobenius"
+            )
 
     @torch.no_grad()
     def _teacher_forward(self, inputs) -> CausalLMOutputWithPast:
@@ -52,7 +64,7 @@ class KDTrainer(Trainer):
         return_outputs=False,
         **kwargs,
     ):
-        student_output: xLSTMCausalLMOutput = model(
+        student_output: DistilxLSTMCausalLMOutput = model(
             **inputs,
             output_hidden_states=True,
         )
@@ -78,14 +90,11 @@ class KDTrainer(Trainer):
             )
 
             T = self.args.temperature
-            scaled_temperature = T**2
-
             student_probs = F.log_softmax(student_logits / T, dim=-1)
             teacher_probs = F.softmax(teacher_logits / T, dim=-1)
-            kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
-            kl_loss_term = self.args.kl_weight * scaled_temperature * kl_loss
 
-            total_loss += kl_loss_term
+            kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
+            total_loss += kl_loss * self.args.kl_weight * (T**2)
             task_weight -= self.args.kl_weight
 
             metrics.update(
@@ -96,47 +105,45 @@ class KDTrainer(Trainer):
             )
 
         # # Compute Frobenius loss
-        if self.args.compute_frobenius_loss:
-            student_h = (
-                student_output["hidden_states_per_block"]
-                if self.args.frobenius_norm_computation == "ratio"
-                else student_output["hidden_states"]
-            )
+        if self.args.compute_alignment_loss:
+            student_h = student_output["hidden_states"]  # a tuple of tensors
+            student_h = torch.cat(student_h, dim=0)
 
-            frobenius_loss, norm_per_block = self.frobenius_criterion(
+            teacher_h = None
+            if isinstance(teacher_output.hidden_states, tuple):
                 # skip the first hidden state because the "transformers" library
                 # sets the embedding layer's output as the first element in the
                 # all_hidden_states tuple
-                teacher_hidden_states=teacher_output.hidden_states[1:],
-                student_hidden_states=student_h,
-                computation=self.args.frobenius_norm_computation,
-            )
+                teacher_h = torch.cat(teacher_output.hidden_states[1:], dim=0)
+            else:
+                teacher_h = teacher_output.hidden_states[1:]
 
-            total_loss += frobenius_loss * self.args.frobenius_weight
-            if self.args.additive_frobenius_weight:
-                task_weight -= self.args.frobenius_weight
+            # Compute the alignment loss
+            alignment_loss = None
+            if self.args.alignment_loss == "frobenius":
+                alignment_loss = self.alignment_criterion(
+                    teacher_hidden_states=teacher_h,
+                    student_hidden_states=student_h,
+                )
+            elif self.args.alignment_loss == "cosine":
+                # Compute the cosine similarity between the teacher and student hidden states
+                alignment_loss = self.alignment_criterion(
+                    student_h,
+                    teacher_h,
+                    target=torch.ones(teacher_h.shape[0], device=teacher_h.device),
+                )
+
+            total_loss += alignment_loss * self.args.alignment_weight
+
+            if self.args.additive_alignment_weight:
+                task_weight -= self.args.alignment_weight
 
             metrics.update(
                 {
-                    "frobenius_loss": frobenius_loss.item(),
-                    "frobenius_weight": self.args.frobenius_weight,
+                    "alignment_loss": alignment_loss.item(),
+                    "alignment_weight": self.args.alignment_weight,
                 }
             )
-
-            if norm_per_block is not None:
-                norm_dict = {
-                    f"frobenius_norm/block_{idx}": norm.item()
-                    for idx, norm in enumerate(norm_per_block)
-                }
-
-                # Log the Frobenius norm per block
-                if is_logging_step:
-                    for key, value in norm_dict.items():
-                        self.tb_writer.add_scalar(
-                            key,
-                            value,
-                            global_step=self.state.global_step,
-                        )
 
         total_loss += task_weight * task_loss
         perplexity = torch.exp(task_loss)

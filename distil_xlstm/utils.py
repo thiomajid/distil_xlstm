@@ -15,11 +15,11 @@ from xlstm import (
 )
 
 
-class xLSTMCausalLMOutput(TypedDict):
+class DistilxLSTMCausalLMOutput(TypedDict):
     logits: torch.Tensor
     loss: Optional[torch.Tensor] = None
-    hidden_states: Optional[torch.Tensor] = None
-    hidden_states_per_block: Optional[torch.Tensor] = None
+    hidden_states: Optional[tuple[torch.Tensor]] = None
+    last_hidden_state: Optional[torch.Tensor] = None
 
 
 def count_parameters(model: nn.Module):
