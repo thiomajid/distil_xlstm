@@ -36,13 +36,11 @@ def main(cfg: DictConfig):
     parser = HfArgumentParser(KDArguments)
 
     # Load trainer arguments from YAML file
-    args = parser.parse_dict(
-        OmegaConf.to_container(cfg["trainer"], resolve=True)
-    )[0]
+    args = parser.parse_dict(OmegaConf.to_container(cfg["trainer"], resolve=True))[0]
     args = cast(KDArguments, args)
 
     config = DistilxLSTMConfig(
-        xlstm_cfg=parse_xlstm_config_dict(
+        xlstm_config=parse_xlstm_config_dict(
             OmegaConf.to_container(cfg["model"], resolve=True)
         )
     )
@@ -77,7 +75,7 @@ def main(cfg: DictConfig):
         hub_url=args.dataset_url,
         subset=args.train_subset,
         features=args.features,
-        max_seq_length=config.xlstm_cfg.context_length,
+        max_seq_length=config.xlstm_config.context_length,
         tokenizer=tokenizer,
         split=args.train_split,
         num_samples=args.train_samples,
@@ -95,7 +93,7 @@ def main(cfg: DictConfig):
         hub_url=args.dataset_url,
         subset=args.eval_subset,
         features=args.features,
-        max_seq_length=config.xlstm_cfg.context_length,
+        max_seq_length=config.xlstm_config.context_length,
         tokenizer=tokenizer,
         split=args.eval_split,
         num_samples=args.eval_samples,

@@ -44,10 +44,11 @@ def main(cfg: DictConfig):
     logger.info("Trainer arguments:")
     pprint(args)
 
+    config_dict = OmegaConf.to_container(cfg["model"], resolve=True)
+    xlstm_dict = config_dict.pop("xlstm_config", None)
     config = DistilxLSTMConfig(
-        xlstm_cfg=parse_xlstm_config_dict(
-            OmegaConf.to_container(cfg["model"], resolve=True)
-        )
+        xlstm_config=parse_xlstm_config_dict(xlstm_dict),
+        **config_dict,
     )
 
     logger.info("Model configuration:")
@@ -124,7 +125,7 @@ def main(cfg: DictConfig):
         hub_url=args.dataset_url,
         subset=args.train_subset,
         features=args.features,
-        max_seq_length=config.xlstm_cfg.context_length,
+        max_seq_length=config.xlstm_config.context_length,
         tokenizer=tokenizer,
         split=args.train_split,
         num_samples=args.train_samples,
@@ -142,7 +143,7 @@ def main(cfg: DictConfig):
         hub_url=args.dataset_url,
         subset=args.eval_subset,
         features=args.features,
-        max_seq_length=config.xlstm_cfg.context_length,
+        max_seq_length=config.xlstm_config.context_length,
         tokenizer=tokenizer,
         split=args.eval_split,
         num_samples=args.eval_samples,

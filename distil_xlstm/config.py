@@ -20,30 +20,30 @@ class DistilxLSTMConfig(PretrainedConfig):
     def __init__(
         self,
         num_blocks_init: NumBlocksInitKind = "same",
-        xlstm_cfg: Optional[xLSTMLMModelConfig] = None,
+        xlstm_config: Optional[xLSTMLMModelConfig] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        if xlstm_cfg is None:
-            xlstm_cfg = xLSTMLMModelConfig()
+        if xlstm_config is None:
+            xlstm_config = xLSTMLMModelConfig()
 
         self.num_blocks_init = num_blocks_init
-        self.xlstm_cfg = xlstm_cfg
+        self.xlstm_config = xlstm_config
 
     def to_dict(self) -> Dict[str, Any]:
         output = super().to_dict()
 
-        # Making sure that 'xlstm_cfg' is serialized
-        output["xlstm_cfg"] = asdict(self.xlstm_cfg)
+        # Making sure that 'xlstm_config' is serialized
+        output["xlstm_config"] = asdict(self.xlstm_config)
         return output
 
     @classmethod
     def from_dict(cls, config_dict, **kwargs):
         xlstm_config_dict: Dict[str, any] = config_dict.pop("xlstm_config")
-        xlstm_cfg = cls.parse_xlstm_config_dict(xlstm_config_dict)
+        xlstm_config = cls.parse_xlstm_config_dict(xlstm_config_dict)
 
-        return cls(xlstm_cfg=xlstm_cfg, **config_dict)
+        return cls(xlstm_config=xlstm_config, **config_dict)
 
     @staticmethod
     def parse_xlstm_config_dict(config_dict: Dict[str, any]):
@@ -70,10 +70,10 @@ class DistilxLSTMConfig(PretrainedConfig):
             )
 
         # xLSTM stack config deserialization
-        xlstm_cfg = xLSTMLMModelConfig(
+        xlstm_config = xLSTMLMModelConfig(
             mlstm_block=mlstm_block,
             slstm_block=slstm_block,
             **config_dict,
         )
 
-        return xlstm_cfg
+        return xlstm_config

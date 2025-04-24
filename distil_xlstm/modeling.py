@@ -32,18 +32,18 @@ class DistilxLSTMModel(PreTrainedModel):
 
         # Code from original xLSTMLMModel __init__ method
         self.embedding = nn.Embedding(
-            num_embeddings=config.xlstm_cfg.vocab_size,
-            embedding_dim=config.xlstm_cfg.embedding_dim,
+            num_embeddings=config.xlstm_config.vocab_size,
+            embedding_dim=config.xlstm_config.embedding_dim,
             padding_idx=config.pad_token_id,
         )
 
         self.embedding_dropout = (
-            nn.Dropout(config.xlstm_cfg.dropout)
-            if config.xlstm_cfg.add_embedding_dropout
+            nn.Dropout(config.xlstm_config.dropout)
+            if config.xlstm_config.add_embedding_dropout
             else nn.Identity()
         )
 
-        self.backbone = xLSTMBlockStack(config=config.xlstm_cfg)
+        self.backbone = xLSTMBlockStack(config=config.xlstm_config)
 
     def forward(self, x: torch.Tensor):
         h_t = self.embedding(x)
@@ -59,7 +59,7 @@ class DistilxLSTMModel(PreTrainedModel):
     def reset_parameters(self):
         small_init_init_(
             self.embedding.weight,
-            dim=self.config.xlstm_cfg.embedding_dim,
+            dim=self.config.xlstm_config.embedding_dim,
         )
 
         if not isinstance(self.backbone.post_blocks_norm, nn.Identity):
@@ -83,24 +83,24 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         super().__init__(config)
 
         self.config = config
-        self.num_blocks = config.xlstm_cfg.num_blocks
+        self.num_blocks = config.xlstm_config.num_blocks
 
         self.xlstm = DistilxLSTMModel(config=config)
         self.lm_head = nn.Linear(
-            in_features=config.xlstm_cfg.embedding_dim,
-            out_features=config.xlstm_cfg.vocab_size,
+            in_features=config.xlstm_config.embedding_dim,
+            out_features=config.xlstm_config.vocab_size,
             bias=False,
         )
 
-        if config.xlstm_cfg.tie_weights:
+        if config.xlstm_config.tie_weights:
             self.lm_head.weight = self.xlstm.embedding.weight
 
     def reset_parameters(self):
         self.xlstm.reset_parameters()
 
-        if not self.config.xlstm_cfg.tie_weights:
+        if not self.config.xlstm_config.tie_weights:
             small_init_init_(
-                self.lm_head.weight, dim=self.config.xlstm_cfg.embedding_dim
+                self.lm_head.weight, dim=self.config.xlstm_config.embedding_dim
             )
 
     def reset_parameters_for_distillation(self):
@@ -159,13 +159,13 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         teacher_config: AutoConfig,
         tokenizer: AutoTokenizer,
     ):
-        config.xlstm_cfg.vocab_size = teacher_config.vocab_size
-        config.xlstm_cfg.embedding_dim = teacher_config.hidden_size
+        config.xlstm_config.vocab_size = teacher_config.vocab_size
+        config.xlstm_config.embedding_dim = teacher_config.hidden_size
 
         if config.num_blocks_init == "same":
-            config.xlstm_cfg.num_blocks = teacher_config.num_hidden_layers
+            config.xlstm_config.num_blocks = teacher_config.num_hidden_layers
         elif config.num_blocks_init == "half":
-            config.xlstm_cfg.num_blocks = teacher_config.num_hidden_layers // 2
+            config.xlstm_config.num_blocks = teacher_config.num_hidden_layers // 2
         elif config.num_blocks_init == "custom":
             pass
         else:
@@ -181,8 +181,8 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         # too small but also increases the number of computational units
         # dividing by 4 is a good trade-off
         num_heads = rounded_teacher_num_heads // 4
-        config.xlstm_cfg.mlstm_block.mlstm.num_heads = num_heads
-        config.xlstm_cfg.slstm_block.slstm.num_heads = num_heads
+        config.xlstm_config.mlstm_block.mlstm.num_heads = num_heads
+        config.xlstm_config.slstm_block.slstm.num_heads = num_heads
 
         config.pad_token_id = tokenizer.pad_token_id
         model = DistilxLSTMForCausalLM(config=config)
@@ -210,7 +210,7 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         )
         model.lm_head.load_state_dict(teacher_model.lm_head.state_dict())
 
-        if config.xlstm_cfg.tie_weights:
+        if config.xlstm_config.tie_weights:
             model.lm_head.weight = model.token_embedding.weight
 
         model.xlstm.embedding.requires_grad_(False)

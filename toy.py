@@ -14,7 +14,7 @@ def main():
     print(model)
 
     dummy_input = torch.randint(
-        1, config.xlstm_cfg.vocab_size, (2, config.xlstm_cfg.context_length)
+        1, config.xlstm_config.vocab_size, (2, config.xlstm_config.context_length)
     )
 
     output: DistilxLSTMCausalLMOutput = model(
