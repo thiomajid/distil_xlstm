@@ -5,6 +5,7 @@ import safetensors
 import torch
 import torch.nn.functional as F
 from einops import rearrange
+from huggingface_hub import snapshot_download
 from torch import nn
 from transformers import (
     AutoConfig,
@@ -236,8 +237,9 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
     @staticmethod
     def from_safetensors(
         hf_repo: str,
-        filename: Path | str,
+        local_dir: Path | str,
         device: str = "cuda",
+        token=None,
     ) -> "DistilxLSTMForCausalLM":
         """
         Creates an instance of DistilxLSTM by loading its safetensors checkpoint downloaded from the Hugging Face Hub
@@ -262,16 +264,30 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         FileNotFoundError
             If the file does not exist on the disk.
         """
-        if isinstance(filename, str):
-            filename = Path(filename)
+        if isinstance(local_dir, str):
+            local_dir = Path(local_dir)
 
-        if not filename.exists():
-            raise FileNotFoundError(f"{filename} does not exist on the disk.")
+        if not local_dir.exists():
+            local_dir.mkdir(parents=True, exist_ok=True)
 
-        config = DistilxLSTMConfig.from_pretrained(hf_repo)
-        model = DistilxLSTMForCausalLM(config=config)
-        safetensors.torch.load_model(model=model, filename=filename, device=device)
+        # Download the model from Hugging Face Hub
+        snapshot_download(
+            repo_id=hf_repo,
+            revision="main",
+            local_dir=local_dir,
+            token=token,
+            allow_patterns=["*.safetensors", "*.json"],
+        )
 
+        config = DistilxLSTMConfig.from_pretrained(local_dir)
+        model = DistilxLSTMForCausalLM(config).to(device)
+        state_dict = safetensors.torch.load_file(
+            filename=local_dir / "model.safetensors",
+            device=device,
+        )
+
+        model.load_state_dict(state_dict)
         model = model.to(device)
+        print(f"Model loaded to device: {device}")
 
         return model
