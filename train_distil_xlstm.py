@@ -1,4 +1,5 @@
 import logging
+from pprint import pprint
 from typing import cast
 
 import hydra
@@ -42,11 +43,17 @@ def main(cfg: DictConfig):
     )[0]
     args = cast(KDArguments, args)
 
+    logger.info("Trainer arguments:")
+    pprint(args)
+
     config = DistilxLSTMConfig(
         xlstm_cfg=parse_xlstm_config_dict(
             OmegaConf.to_container(cfg["model"], resolve=True)
         )
     )
+
+    logger.info("Model configuration:")
+    pprint(config)
 
     logger.info("Loading teacher model and tokenizer...")
     # Load teacher model and tokenizer
