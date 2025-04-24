@@ -201,7 +201,6 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
             config=config,
             teacher_config=teacher_model.config,
             tokenizer=tokenizer,
-            return_xlstm_config=True,
         )
 
         model = model.to(teacher_model.device)
