@@ -163,11 +163,11 @@ def main(cfg: DictConfig):
     train_dataset.set_format("torch", columns=["input_ids", "attention_mask", "length"])
 
     logger.info(
-        f"Loading evaluation dataset from {args.train_} with {args.eval_samples} samples"
+        f"Loading evaluation dataset from {args.train_dataset_url} with {args.eval_samples} samples"
     )
 
     eval_dataset = get_dataset(
-        hub_url=args.train_,
+        hub_url=args.train_dataset_url,
         subset=args.eval_subset,
         features=args.features,
         max_seq_length=config.xlstm_config.context_length,
