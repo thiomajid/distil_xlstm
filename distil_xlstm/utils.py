@@ -1,5 +1,7 @@
 import subprocess
-from typing import Any, Optional, TypedDict
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Literal, Optional, TypedDict
 
 import torch
 from torch import nn
@@ -126,3 +128,50 @@ def parse_xlstm_config_dict(config_dict: dict[str, Any]):
     )
 
     return xlstm_config
+
+
+_EvalModelKind = Literal["distil_xlstm", "xlstm", "hub_model"]
+PathLike = str | Path
+
+
+@dataclass
+class PerplexityEvaluationConfig:
+    def __init__(
+        self,
+        model_type: _EvalModelKind,
+        hub_url: str,
+        dataset_url: str,
+        data_split: str,
+        text_column: str,
+        batch_size: int,
+        max_seq_length: int,
+        num_workers: int,
+        local_dir: PathLike | None = None,
+        data_subset: Optional[str] = None,
+        samples: int | Literal["all"] = "all",
+        device: str = "cuda",
+        pin_memory: bool = True,
+        fp16: bool = True,
+        hub_token: Optional[str] = None,
+    ):
+        self.model_type = model_type
+        self.local_dir = local_dir
+        self.hub_url = hub_url
+        self.dataset_url = dataset_url
+        self.data_split = data_split
+        self.data_subset = data_subset
+        self.text_column = text_column
+        self.batch_size = batch_size
+        self.max_seq_length = max_seq_length
+        self.num_workers = num_workers
+        self.samples = samples
+        self.device = device
+        self.pin_memory = pin_memory
+        self.fp16 = fp16
+        self.hub_token = hub_token
+
+    def __repr__(self):
+        return f"PerplexityEvaluationConfig({self.__dict__})"
+
+    def __str__(self):
+        return self.__repr__()

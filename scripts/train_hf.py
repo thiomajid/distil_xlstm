@@ -18,7 +18,7 @@ from distil_xlstm.trainer.arguments import KDArguments
 from distil_xlstm.utils import count_parameters
 
 
-@hydra.main(config_path="./configs", config_name="train_config")
+@hydra.main(config_path="../configs", config_name="train_config")
 def main(cfg: DictConfig):
     # Set up logging
     logging.basicConfig(

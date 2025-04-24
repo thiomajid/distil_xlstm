@@ -23,7 +23,7 @@ from distil_xlstm.utils import (
 )
 
 
-@hydra.main(config_path="./configs", config_name="train_config")
+@hydra.main(config_path="../configs", config_name="train_config")
 def main(cfg: DictConfig):
     # Set up logging
     logging.basicConfig(
