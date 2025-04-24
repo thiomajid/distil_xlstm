@@ -86,7 +86,7 @@ class KDArguments(TrainingArguments):
     )
 
     final_alignment_weight: float = field(default=0.5)
-    frobenius_schedule: ParamScheduleType = "decreasing"
+    alignment_schedule: ParamScheduleType = "decreasing"
 
     frobenius_norm_reduction: FrobeniusNormReduction = field(
         default="block_wise",

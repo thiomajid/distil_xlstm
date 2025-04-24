@@ -27,12 +27,13 @@ kl_schedule: "decreasing"
 compute_kl_loss: true
 
 # Hidden state alignment
+compute_alignment_loss: true
+alignment_loss: "cosine"
 alignment_weight: 0.01
 final_alignment_weight: 0.001
 alignment_schedule: "decreasing"
 frobenius_norm_reduction: "block_wise"
-compute_alignment_loss: true
-additive_alignment_weight: false
+additive_alignment_weight: true
 
 # Temperature args
 temperature: 2

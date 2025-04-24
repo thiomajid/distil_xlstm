@@ -165,15 +165,16 @@ def main(cfg: DictConfig):
         )
         annealing_callback.register_scheduler("temperature", temperature_scheduler)
 
-    if args.frobenius_schedule == "decreasing":
-        frobenius_weight_scheduler = ScalarAnnealingScheduler(
+    if args.alignment_schedule == "decreasing":
+        alignment_weight_scheduler = ScalarAnnealingScheduler(
             initial_value=args.alignment_weight,
             final_value=args.final_alignment_weight,
             delta=args.delta,
             schedule_fn_variant="logarithmic",
         )
+
         annealing_callback.register_scheduler(
-            "frobenius_weight", frobenius_weight_scheduler
+            "alignment_weight", alignment_weight_scheduler
         )
     if args.kl_schedule == "decreasing":
         kl_weight_scheduler = ScalarAnnealingScheduler(

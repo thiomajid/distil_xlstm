@@ -18,9 +18,13 @@ def main():
     )
 
     output: DistilxLSTMCausalLMOutput = model(
-        dummy_input, frobenius_computation="ratio"
+        dummy_input,
+        output_hidden_states=True,
     )
     print(output["logits"].shape)
+
+    states = torch.cat(output["hidden_states"], dim=0)
+    print(states.shape)
 
 
 if __name__ == "__main__":
