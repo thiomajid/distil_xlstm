@@ -20,7 +20,6 @@ from distil_xlstm.utils import (
     DistilxLSTMCausalLMOutput,
     count_parameters,
     count_trainable_parameters,
-    next_multiple_of,
 )
 
 
@@ -159,32 +158,32 @@ class DistilxLSTMForCausalLM(PreTrainedModel):
         teacher_config: AutoConfig,
         tokenizer: AutoTokenizer,
     ):
-        config.xlstm_config.vocab_size = teacher_config.vocab_size
-        config.xlstm_config.embedding_dim = teacher_config.hidden_size
+        # config.xlstm_config.vocab_size = teacher_config.vocab_size
+        # config.xlstm_config.embedding_dim = teacher_config.hidden_size
 
-        if config.num_blocks_init == "same":
-            config.xlstm_config.num_blocks = teacher_config.num_hidden_layers
-        elif config.num_blocks_init == "half":
-            config.xlstm_config.num_blocks = teacher_config.num_hidden_layers // 2
-        elif config.num_blocks_init == "custom":
-            pass
-        else:
-            raise ValueError(
-                f"num_blocks_init should be one of ['same', 'half', 'custom'], but got {config.num_blocks_init}"
-            )
+        # if config.num_blocks_init == "same":
+        #     config.xlstm_config.num_blocks = teacher_config.num_hidden_layers
+        # elif config.num_blocks_init == "half":
+        #     config.xlstm_config.num_blocks = teacher_config.num_hidden_layers // 2
+        # elif config.num_blocks_init == "custom":
+        #     pass
+        # else:
+        #     raise ValueError(
+        #         f"num_blocks_init should be one of ['same', 'half', 'custom'], but got {config.num_blocks_init}"
+        #     )
 
-        rounded_teacher_num_heads = next_multiple_of(
-            teacher_config.num_attention_heads, multiple=4
-        )
+        # rounded_teacher_num_heads = next_multiple_of(
+        #     teacher_config.num_attention_heads, multiple=4
+        # )
 
-        # Having too many heads is not a problem per se, but it makes the hidden dimensions
-        # too small but also increases the number of computational units
-        # dividing by 4 is a good trade-off
-        num_heads = rounded_teacher_num_heads // 4
-        config.xlstm_config.mlstm_block.mlstm.num_heads = num_heads
-        config.xlstm_config.slstm_block.slstm.num_heads = num_heads
+        # # Having too many heads is not a problem per se, but it makes the hidden dimensions
+        # # too small but also increases the number of computational units
+        # # dividing by 4 is a good trade-off
+        # num_heads = rounded_teacher_num_heads // 4
+        # config.xlstm_config.mlstm_block.mlstm.num_heads = num_heads
+        # config.xlstm_config.slstm_block.slstm.num_heads = num_heads
 
-        config.pad_token_id = tokenizer.pad_token_id
+        # config.pad_token_id = tokenizer.pad_token_id
         model = DistilxLSTMForCausalLM(config=config)
         model.reset_parameters_for_distillation()
 
