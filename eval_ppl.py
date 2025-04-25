@@ -147,7 +147,7 @@ def evaluate_perplexity(
             total_loss += loss.sum().item()
             total_tokens += num_tokens
 
-    avg_loss = total_loss / total_tokens if total_tokens > 0 else float("inf")
+    avg_loss = total_loss / total_tokens
     perplexity = math.exp(avg_loss)
 
     return {
