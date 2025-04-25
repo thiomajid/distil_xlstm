@@ -86,15 +86,16 @@ class FrobeniusLoss(nn.Module):
             b=student_hidden_states.shape[0],
         )
 
+        # block-wise average of teacher hidden states
+        # (batch_size, num_blocks, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
+        avg_teacher_hidden_state = teacher_hidden_states.mean(dim=1)
+
         student_hidden_states = rearrange(
             student_hidden_states,
             "(n b) s d -> b n s d",
             b=student_hidden_states.shape[0],
         )
 
-        # layer-wise average of teacher hidden states
-        # (batch_size, num_layers, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
-        avg_teacher_hidden_state = teacher_hidden_states.mean(dim=1)
         avg_student_hidden_state = student_hidden_states.mean(dim=1)
 
         if avg_student_hidden_state.shape != avg_teacher_hidden_state.shape:

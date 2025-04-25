@@ -72,7 +72,7 @@ class KDTrainer(Trainer):
         teacher_output = self._teacher_forward(inputs)
 
         metrics = dict()
-        task_loss = student_output["loss"]
+        task_loss = student_output["loss"].mean()
         task_weight = 1
         total_loss = torch.tensor(
             0.0,
@@ -93,7 +93,7 @@ class KDTrainer(Trainer):
             student_probs = F.log_softmax(student_logits / T, dim=-1)
             teacher_probs = F.softmax(teacher_logits / T, dim=-1)
 
-            kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs)
+            kl_loss = self.kl_loss_fn(input=student_probs, target=teacher_probs).mean()
             total_loss += kl_loss * self.args.kl_weight * (T**2)
             task_weight -= self.args.kl_weight
 
@@ -138,7 +138,7 @@ class KDTrainer(Trainer):
                     student_h_flat, teacher_h_flat, target=target
                 )
 
-            total_loss += alignment_loss * self.args.alignment_weight
+            total_loss += alignment_loss.mean() * self.args.alignment_weight
 
             if self.args.additive_alignment_weight:
                 task_weight -= self.args.alignment_weight
