@@ -198,7 +198,7 @@ def main(cfg: DictConfig):
         )
         annealing_callback.register_scheduler("temperature", temperature_scheduler)
 
-    if args.alignment_schedule == "decreasing":
+    if args.alignment_schedule == "decreasing" and args.compute_alignment_loss:
         alignment_weight_scheduler = ScalarAnnealingScheduler(
             initial_value=args.alignment_weight,
             final_value=args.final_alignment_weight,
@@ -209,7 +209,7 @@ def main(cfg: DictConfig):
         annealing_callback.register_scheduler(
             "alignment_weight", alignment_weight_scheduler
         )
-    if args.kl_schedule == "decreasing":
+    if args.kl_schedule == "decreasing" and args.compute_kl_loss:
         kl_weight_scheduler = ScalarAnnealingScheduler(
             initial_value=args.kl_weight,
             final_value=args.final_kl_weight,
