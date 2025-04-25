@@ -57,7 +57,7 @@ class FrobeniusLoss(nn.Module):
         norm: torch.Tensor | None = None
         if self.reduction == "block_wise":
             diff = student_hidden_states - teacher_hidden_states
-            norm = torch.norm(diff, p="fro", dim=(-1, -2))
+            norm = torch.norm(diff, p="fro", dim=(-1, -2)).mean()
         elif self.reduction == "ratio":
             norm = self.__ratio_reduction(
                 student_hidden_states,
@@ -86,17 +86,26 @@ class FrobeniusLoss(nn.Module):
             b=student_hidden_states.shape[0],
         )
 
+        student_hidden_states = rearrange(
+            student_hidden_states,
+            "(n b) s d -> b n s d",
+            b=student_hidden_states.shape[0],
+        )
+
         # layer-wise average of teacher hidden states
         # (batch_size, num_layers, seq_len, hidden_size) -> (batch_size, seq_len, hidden_size)
         avg_teacher_hidden_state = teacher_hidden_states.mean(dim=1)
+        avg_student_hidden_state = student_hidden_states.mean(dim=1)
 
-        if student_hidden_states.shape != avg_teacher_hidden_state.shape:
+        if avg_student_hidden_state.shape != avg_teacher_hidden_state.shape:
             raise ValueError(
-                f"Shape mismatch: student hidden state has shape {student_hidden_states.shape}, "
+                f"Shape mismatch: student hidden state has shape {avg_student_hidden_state.shape}, "
                 f"but averaged teacher hidden state has shape {avg_teacher_hidden_state.shape}."
             )
 
-        norm = torch.norm(avg_teacher_hidden_state - student_hidden_states, p="fro")
+        norm = torch.norm(
+            avg_teacher_hidden_state - avg_student_hidden_state, p="fro"
+        ).mean()
         return norm
 
     def __ratio_reduction(
