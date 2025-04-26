@@ -48,9 +48,9 @@ def load_model(config: PerplexityEvaluationConfig):
 
     model: DistilxLSTMForCausalLM | AutoModelForCausalLM | None = None
 
-    if config.model_type == "hub_model":
-        logger.info(f"Downloading model weights for model of type {config.model_type}")
-        download_weights(config)
+    # if config.model_type == "hub_model":
+    #     logger.info(f"Downloading model weights for model of type {config.model_type}")
+    #     download_weights(config)
 
     if config.model_type == "distil_xlstm" or config.model_type == "xlstm":
         model = DistilxLSTMForCausalLM.from_safetensors(

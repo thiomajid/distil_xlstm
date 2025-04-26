@@ -21,7 +21,11 @@ dependencies = [
 ]
 
 [tool.uv]
-dev-dependencies = ["tensorboard>=2.18.0", "tensorboardx>=2.6.2.2"]
+dev-dependencies = [
+    "tbparse>=0.0.9",
+    "tensorboard>=2.18.0",
+ "tensorboardx>=2.6.2.2",
+]
 
 
 [tool.setuptools.packages.find]

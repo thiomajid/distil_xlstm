@@ -13,6 +13,8 @@ fi
 
 echo "The script file exists: $SCRIPT_FILE"
 echo "The script file is executable: $(test -x "$SCRIPT_FILE" && echo 'yes' || echo 'no')"
+
+
 python3 train_hf.py model=gemma2 \
 		+hub_model_id="google/gemma-2-2b" \
 		+max_seq_length=256 \
