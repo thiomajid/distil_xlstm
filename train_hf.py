@@ -67,7 +67,7 @@ def main(cfg: DictConfig):
 
     logger.info(f"Model initialized with {count_parameters(model)}")
 
-    # raise Exception("steofsd")
+    raise Exception("steofsd")
 
     # Load datasets
     logger.info(

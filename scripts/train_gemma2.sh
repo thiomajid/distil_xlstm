@@ -1,5 +1,7 @@
 #! /bin/bash
 
+echo "$(pwd)"
+
 python3 train_hf.py model=gemma2 \
 		+hub_model_id="google/gemma-2-2b" \
 		+max_seq_length=256 \
@@ -8,7 +10,7 @@ python3 train_hf.py model=gemma2 \
 		++model.hidden_size=960 \
 		++model.vocab_size=49152 \
 		++trainer.hub_token="${HUB_TOKEN}" \
-		++trainer.hub_model_id=${HUB_MODEL_ID}" \
+		++trainer.hub_model_id="${HUB_MODEL_ID}" \
 		++trainer.seed=42 \
 		++trainer.optim="adamw_torch_fused" \
 		++trainer.lr_scheduler_type="cosine" \
@@ -31,4 +33,4 @@ python3 train_hf.py model=gemma2 \
 		++trainer.eval_samples=2000 \
 		++trainer.features=["text"] \
 		++trainer.use_dataset_cache=true \
-		++trainer.dataset_cache_dir="./.hf_data_cache" \
+		++trainer.dataset_cache_dir="./.hf_data_cache"

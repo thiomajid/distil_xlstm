@@ -34,4 +34,4 @@ python3 train_hf.py model=qwen1.5 \
 		++trainer.eval_samples=2000 \
 		++trainer.features=["text"] \
 		++trainer.use_dataset_cache=true \
-		++trainer.dataset_cache_dir="./.hf_data_cache" \
+		++trainer.dataset_cache_dir="./.hf_data_cache"
