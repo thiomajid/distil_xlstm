@@ -19,7 +19,7 @@ _registry: dict[str, AutoConfig] = {
     "state-spaces/mamba-390m-hf": MambaConfig,
     "ai21labs/AI21-Jamba-Mini-1.5": JambaConfig,
     "Qwen/Qwen1.5-MoE-A2.7B": Qwen2MoeConfig,
-    "HuggingFaceTB/SmolLM2-1.7B-Instruct": LlamaConfig,
+    "HuggingFaceTB/SmolLM2-360M-Instruct": LlamaConfig,
 }
 
 

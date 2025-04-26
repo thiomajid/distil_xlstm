@@ -102,6 +102,20 @@ class KDArguments(TrainingArguments):
         },
     )
 
+    use_dataset_cache: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether to use the dataset cache. If False, the dataset will be reloaded every time."
+        },
+    )
+
+    dataset_cache_dir: str = field(
+        default="./.dataset_cache",
+        metadata={
+            "help": "Directory where the dataset cache will be stored. If not set, the cache will be stored in the current directory."
+        },
+    )
+
 
 class DualGpuTraingArgs(KDArguments):
     student_device: int = field(default=0)

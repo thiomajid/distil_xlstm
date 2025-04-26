@@ -1,12 +1,23 @@
 #! /bin/bash
 
-echo "$(pwd)"
+echo "Initializing Gemma 2 training script"
 
+echo "The current working directory is: $(pwd)" && ls
+echo "The current date and time is: $(date)"
+
+SCRIPT_FILE="$(pwd)/train_hf.py"
+if [ ! -f "$SCRIPT_FILE" ]; then
+	echo "Error: $SCRIPT_FILE not found!"
+	exit 1
+fi
+
+echo "The script file exists: $SCRIPT_FILE"
+echo "The script file is executable: $(test -x "$SCRIPT_FILE" && echo 'yes' || echo 'no')"
 python3 train_hf.py model=gemma2 \
 		+hub_model_id="google/gemma-2-2b" \
 		+max_seq_length=256 \
 		+attn_implementation="eager" \
-		++model.num_hidden_layers=10 \
+		++model.num_hidden_layers=8 \
 		++model.hidden_size=960 \
 		++model.vocab_size=49152 \
 		++trainer.hub_token="${HUB_TOKEN}" \

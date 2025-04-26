@@ -1,15 +1,26 @@
 #! /bin/bash
 
-python3 train_hf.py model=qwen1.5 \
-		+hub_model_id="Qwen/Qwen1.5-MoE-A2.7B" \
+echo "Initializing SmolLM2 training script"
+
+echo "The current working directory is: $(pwd)" && ls
+echo "The current date and time is: $(date)"
+
+SCRIPT_FILE="$(pwd)/train_hf.py"
+if [ ! -f "$SCRIPT_FILE" ]; then
+	echo "Error: $SCRIPT_FILE not found!"
+	exit 1
+fi
+
+echo "The script file exists: $SCRIPT_FILE"
+echo "The script file is executable: $(test -x "$SCRIPT_FILE" && echo 'yes' || echo 'no')"
+
+python3 -u "$(pwd)/train_hf.py" \
+		model=SmolLM2-360M-Instruct \
+		+hub_model_id="HuggingFaceTB/SmolLM2-360M-Instruct" \
 		+max_seq_length=256 \
-		+attn_implementation="sdpa" \
-		++model.num_hidden_layers=8 \
-		++model.num_experts=8 \
-		++model.num_experts_per_tok=2 \
+		++model.num_hidden_layers=26 \
 		++model.hidden_size=960 \
 		++model.vocab_size=49152 \
-		++model.torch_dtype="float32" \
 		++trainer.hub_token="${HUB_TOKEN}" \
 		++trainer.hub_model_id="${HUB_MODEL_ID}" \
 		++trainer.seed=42 \
@@ -21,8 +32,8 @@ python3 train_hf.py model=qwen1.5 \
 		++trainer.fp16=true \
 		++trainer.num_train_epochs=1 \
 		++trainer.gradient_accumulation_steps=5 \
-		++trainer.per_device_train_batch_size=5 \
-		++trainer.per_device_eval_batch_size=5 \
+		++trainer.per_device_train_batch_size=4 \
+		++trainer.per_device_eval_batch_size=4 \
 		++trainer.logging_steps=200 \
 		++trainer.save_steps=200 \
 		++trainer.train_dataset_url="HuggingFaceFW/fineweb-edu-llama3-annotations" \

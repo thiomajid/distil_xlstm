@@ -135,3 +135,7 @@ def main(cfg: DictConfig):
         trainer.push_to_hub()
 
     logger.info("Training completed successfully!")
+
+
+if __name__ == "__main__":
+    main()
