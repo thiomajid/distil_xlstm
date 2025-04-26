@@ -67,8 +67,6 @@ def main(cfg: DictConfig):
 
     logger.info(f"Model initialized with {count_parameters(model)}")
 
-    raise Exception("steofsd")
-
     # Load datasets
     logger.info(
         f"Loading training dataset from {args.train_dataset_url} with {args.train_samples} samples"
