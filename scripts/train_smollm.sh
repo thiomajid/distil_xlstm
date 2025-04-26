@@ -18,6 +18,7 @@ python3 -u "$(pwd)/train_hf.py" \
 		model=SmolLM2-360M-Instruct \
 		+hub_model_id="HuggingFaceTB/SmolLM2-360M-Instruct" \
 		+max_seq_length=256 \
+		++model.torch_dtype="float32" \
 		++model.num_hidden_layers=26 \
 		++model.hidden_size=960 \
 		++model.vocab_size=49152 \
