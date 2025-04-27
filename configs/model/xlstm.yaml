@@ -1,4 +1,3 @@
-num_blocks_init: "same"
 xlstm_config:
   vocab_size: 49_152
   context_length: 256

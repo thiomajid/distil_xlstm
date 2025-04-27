@@ -41,7 +41,7 @@ def main(cfg: DictConfig):
 
     config = DistilxLSTMConfig(
         xlstm_config=parse_xlstm_config_dict(
-            OmegaConf.to_container(cfg["model"], resolve=True)
+            OmegaConf.to_container(cfg["model"]["xlstm_config"], resolve=True)
         )
     )
 
