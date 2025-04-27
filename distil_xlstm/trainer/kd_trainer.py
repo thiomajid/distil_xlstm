@@ -80,8 +80,6 @@ class KDTrainer(Trainer):
             dtype=task_loss.dtype,
         )
 
-        is_logging_step = self.state.global_step % self.args.logging_steps == 0
-
         # # Compute KL divergence loss
         if self.args.compute_kl_loss:
             student_logits = rearrange(student_output["logits"], "b s d -> (b s) d")
@@ -162,7 +160,7 @@ class KDTrainer(Trainer):
         )
 
         # Log the metrics
-        if is_logging_step:
+        if self.state.global_step % self.args.logging_steps == 0:
             for key, value in metrics.items():
                 self.tb_writer.add_scalar(
                     f"train/{key}",
