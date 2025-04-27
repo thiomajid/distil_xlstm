@@ -9,12 +9,12 @@ from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     HfArgumentParser,
-    Trainer,
 )
 
 from distil_xlstm.data import get_dataset
 from distil_xlstm.optim.callbacks import PerplexityLoggingCallback
 from distil_xlstm.trainer.arguments import KDArguments
+from distil_xlstm.trainer.hub_model_trainer import HubModelTrainer
 from distil_xlstm.utils import count_parameters
 
 
@@ -112,7 +112,7 @@ def main(cfg: DictConfig):
     )
 
     # Initialize trainer
-    trainer = Trainer(
+    trainer = HubModelTrainer(
         model=model,
         args=args,
         train_dataset=train_dataset,

@@ -8,7 +8,6 @@ from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     HfArgumentParser,
-    Trainer,
 )
 
 from distil_xlstm.config import DistilxLSTMConfig
@@ -16,6 +15,7 @@ from distil_xlstm.data import get_dataset
 from distil_xlstm.modeling import DistilxLSTMForCausalLM
 from distil_xlstm.optim.callbacks import PerplexityLoggingCallback
 from distil_xlstm.trainer.arguments import KDArguments
+from distil_xlstm.trainer.xlstm_trainer import xLSTMTrainer
 from distil_xlstm.utils import (
     count_parameters,
     count_trainable_parameters,
@@ -111,7 +111,7 @@ def main(cfg: DictConfig):
     )
 
     # Initialize trainer
-    trainer = Trainer(
+    trainer = xLSTMTrainer(
         model=model,
         args=args,
         train_dataset=train_dataset,
