@@ -2,8 +2,8 @@ num_blocks_init: "same"
 xlstm_config:
   vocab_size: 49_152
   context_length: 256
-  num_blocks: 12
-  embedding_dim: 256
+  num_blocks: 32
+  embedding_dim: 960
   # slstm_at: [0, 2, 4]
 
   mlstm_block:
