@@ -1,5 +1,4 @@
-from .kd_trainer import KDTrainer
 from .arguments import KDArguments
-from .vanilla_trainer import VanillaTrainer
+from .kd_trainer import KDTrainer
 
-__all__ = ["KDArguments", "KDTrainer", "VanillaTrainer"]
+__all__ = ["KDArguments", "KDTrainer"]
