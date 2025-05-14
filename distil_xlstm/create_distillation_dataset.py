@@ -60,10 +60,11 @@ def extract_teacher_outputs(
     config: OfflineDistillationConfig,
     model: torch.nn.Module,
     tokenizer: AutoTokenizer,
+    logger:logging.Logger = None,
 ):
     """Process the dataset and extract teacher outputs."""
     
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__) if logger is None else logger
     
     # Load the source dataset
     logger.info(f"Loading dataset from {config.dataset_url}")
@@ -131,10 +132,12 @@ def extract_teacher_outputs(
                     "attention_mask": attention_mask[i].cpu().numpy(),
                     "teacher_logits": logits_np[i],
                 }
-                
+
                 # Add hidden states
-                for j, hidden_state in enumerate(hidden_states_np):
-                    sample[f"teacher_hidden_state_{j}"] = hidden_state[i]
+                sample["hidden_states"] = hidden_states.cpu().numpy()
+                
+                # for j, hidden_state in enumerate(hidden_states_np):
+                #     sample[f"teacher_hidden_state_{j}"] = hidden_state[i]
                 
                 all_samples.append(sample)
     
@@ -150,11 +153,11 @@ def extract_teacher_outputs(
 def main(cfg: DictConfig):
     """Main function to create distillation dataset."""
     # Set up logging
+    logger = logging.getLogger(__name__)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
-    logger = logging.getLogger(__name__)
     logger.info("Starting distillation dataset creation...")
     
     # Parse config
@@ -202,6 +205,7 @@ def main(cfg: DictConfig):
         config=config,
         model=model,
         tokenizer=tokenizer,
+        logger=logger,
     )
     
     # Save the dataset locally if specified
