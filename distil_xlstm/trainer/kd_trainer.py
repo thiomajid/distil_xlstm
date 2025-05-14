@@ -16,10 +16,10 @@ from distil_xlstm.utils import DistilxLSTMCausalLMOutput
 class KDTrainer(Trainer):
     def __init__(
         self,
-        teacher_model: AutoModelForCausalLM,
         student_model: DistilxLSTMForCausalLM,
         args: KDArguments,
         tokenizer: AutoTokenizer,
+        teacher_model: AutoModelForCausalLM = None,  # Made optional for offline distillation
         **kwargs,
     ) -> None:
         super().__init__(
@@ -30,7 +30,7 @@ class KDTrainer(Trainer):
         )
 
         self.args = args
-        self.teacher = teacher_model
+        self.teacher = teacher_model  # Can be None for offline distillation
 
         self.kl_loss_fn = partial(F.kl_div, reduction="batchmean")
         self.alignment_criterion = (
@@ -40,6 +40,9 @@ class KDTrainer(Trainer):
         self.tb_writer = SummaryWriter(
             log_dir=args.logging_dir, filename_suffix="manual_logs"
         )
+        
+        # Flag to determine if we're using offline distillation
+        self.use_offline_distillation = teacher_model is None
 
     def _get_alignment_criterion(self):
         if self.args.alignment_loss == "frobenius":
@@ -54,6 +57,10 @@ class KDTrainer(Trainer):
 
     @torch.no_grad()
     def _teacher_forward(self, inputs) -> CausalLMOutputWithPast:
+        """Run teacher model forward pass (only used for online distillation)"""
+        if self.teacher is None:
+            raise ValueError("Teacher model is not available for online distillation")
+            
         output = self.teacher(**inputs, output_hidden_states=True)
         return output
 
@@ -64,12 +71,37 @@ class KDTrainer(Trainer):
         return_outputs=False,
         **kwargs,
     ):
+        # Extract teacher outputs if using offline distillation
+        teacher_logits = None
+        teacher_hidden_states = None
+        
+        if self.use_offline_distillation:
+            # Extract teacher outputs from the inputs
+            if "teacher_logits" in inputs:
+                teacher_logits = inputs.pop("teacher_logits")
+            
+            if "hidden_states" in inputs:
+                teacher_hidden_states = inputs.pop("hidden_states")
+                
+            # If these are not present, raise an error
+            if teacher_logits is None or teacher_hidden_states is None:
+                raise ValueError(
+                    "Offline distillation requires 'teacher_logits' and 'hidden_states' "
+                    "in the input batch. Make sure you're using a dataset created with "
+                    "the offline distillation script."
+                )
+        
+        # Run the student model
         student_output: DistilxLSTMCausalLMOutput = model(
             **inputs,
             output_hidden_states=True,
         )
 
-        teacher_output = self._teacher_forward(inputs)
+        # Get teacher outputs (either from cached dataset or by running the teacher)
+        if not self.use_offline_distillation:
+            teacher_output = self._teacher_forward(inputs)
+            teacher_logits = teacher_output.logits
+            teacher_hidden_states = teacher_output.hidden_states
 
         metrics = dict()
         task_loss = student_output["loss"].mean()
@@ -80,12 +112,17 @@ class KDTrainer(Trainer):
             dtype=task_loss.dtype,
         )
 
-        # # Compute KL divergence loss
+        # Compute KL divergence loss
         if self.args.compute_kl_loss:
             student_logits = rearrange(student_output["logits"], "b s d -> (b s) d")
-            teacher_logits = rearrange(
-                teacher_output.logits.detach(), "b s d -> (b s) d"
-            )
+            teacher_logits = rearrange(teacher_logits, "b s d -> (b s) d")
+            
+            # Ensure teacher logits are on the right device and detached
+            if isinstance(teacher_logits, torch.Tensor):
+                teacher_logits = teacher_logits.to(student_logits.device).detach()
+            else:
+                # Handle numpy array case from offline dataset
+                teacher_logits = torch.tensor(teacher_logits, device=student_logits.device)
 
             T = self.args.temperature
             student_probs = F.log_softmax(student_logits / T, dim=-1)
@@ -102,34 +139,39 @@ class KDTrainer(Trainer):
                 }
             )
 
-        # # Compute Frobenius loss
+        # Compute Frobenius/alignment loss
         if self.args.compute_alignment_loss:
-            student_h = student_output["hidden_states"]  # a tuple of tensors
-            student_h = torch.cat(student_h, dim=0)
+            student_hidden_states = student_output["hidden_states"]  # a tuple of tensors
+            student_hidden_states = torch.cat(student_hidden_states, dim=0)
 
-            teacher_h = None
-            if isinstance(teacher_output.hidden_states, tuple):
-                # skip the first hidden state because the "transformers" library
-                # sets the embedding layer's output as the first element in the
-                # all_hidden_states tuple
-                teacher_h = torch.cat(teacher_output.hidden_states[1:], dim=0)
+            if self.use_offline_distillation:
+                # Convert numpy array to tensor if needed
+                teacher_hidden_states = torch.tensor(teacher_hidden_states, device=student_hidden_states.device)
             else:
-                teacher_h = teacher_output.hidden_states[1:]
+                # Online distillation path (from teacher model output)
+                if isinstance(teacher_hidden_states, tuple):
+                    # Skip the first hidden state (embedding output)
+                    teacher_hidden_states = torch.cat(teacher_hidden_states[1:], dim=0)
+                else:
+                    teacher_hidden_states = teacher_hidden_states[1:]
+
+            # Ensure teacher hidden states are on the right device
+            teacher_hidden_states = teacher_hidden_states.to(student_hidden_states.device)
 
             # Compute the alignment loss
             alignment_loss = None
             if self.args.alignment_loss == "frobenius":
                 alignment_loss = self.alignment_criterion(
-                    teacher_hidden_states=teacher_h,
-                    student_hidden_states=student_h,
+                    teacher_hidden_states=teacher_hidden_states,
+                    student_hidden_states=student_hidden_states,
                 )
             elif self.args.alignment_loss == "cosine":
                 # Flatten the tensors from [batch, seq, hidden] to [batch*seq, hidden]
-                student_h_flat = rearrange(student_h, "b s h -> (b s) h")
-                teacher_h_flat = rearrange(teacher_h, "b s h -> (b s) h")
+                student_h_flat = rearrange(student_hidden_states, "b s h -> (b s) h")
+                teacher_h_flat = rearrange(teacher_hidden_states, "b s h -> (b s) h")
 
                 # Create target tensor with same batch size as flattened tensors
-                target = torch.ones(student_h_flat.shape[0], device=student_h.device)
+                target = torch.ones(student_h_flat.shape[0], device=student_hidden_states.device)
 
                 # Compute the cosine similarity between the teacher and student hidden states
                 alignment_loss = self.alignment_criterion(

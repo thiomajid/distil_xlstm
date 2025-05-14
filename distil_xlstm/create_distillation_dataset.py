@@ -114,7 +114,9 @@ def extract_teacher_outputs(
             
             # Extract the outputs
             logits = outputs.logits
-            hidden_states = outputs.hidden_states
+            hidden_states :tuple[torch.Tensor, ...] = outputs.hidden_states
+            # Skip the first hidden state (embedding output)
+            hidden_states = torch.cat(hidden_states[1:], dim=0)
             
             # Convert to numpy arrays
             logits_np = logits.cpu().numpy()
