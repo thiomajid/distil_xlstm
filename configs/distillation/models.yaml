@@ -1,0 +1,21 @@
+# Model configurations for distillation dataset creation
+
+gemma2:
+  teacher_name: "google/gemma-2-9b"
+  quantize_teacher: true
+  trust_remote_code: true
+
+qwen:
+  teacher_name: "Qwen/Qwen2.5-1.5B-Instruct"
+  quantize_teacher: true
+  trust_remote_code: true
+
+llama3:
+  teacher_name: "meta-llama/Meta-Llama-3-8B"
+  quantize_teacher: true
+  trust_remote_code: true
+
+phi3:
+  teacher_name: "microsoft/phi-3-mini-4k-instruct"
+  quantize_teacher: true
+  trust_remote_code: true

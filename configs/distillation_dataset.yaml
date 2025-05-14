@@ -1,0 +1,31 @@
+### Configuration for offline distillation dataset creation
+
+# Teacher model configuration
+teacher_name: "Qwen/Qwen2.5-1.5B-Instruct"
+quantize_teacher: true
+trust_remote_code: true
+
+# Source dataset configuration
+dataset_url: "allenai/c4"
+data_subset: null # Set to null for no subset
+data_split: "train"
+text_column: "text"
+max_seq_length: 2048
+num_samples: 10000 # Set to "all" for all samples
+
+# Processing configuration
+batch_size: 8
+num_workers: 4
+device: "cuda"
+fp16: true
+
+# Output dataset configuration
+output_dataset_name: "user/distil_xlstm_distillation_dataset" # Replace "user" with your HF username
+output_dataset_description: "Distillation dataset with teacher logits and hidden states for distil-xlstm"
+push_to_hub: true
+hub_token: ${oc.env:HUB_TOKEN}
+local_dir: "./distillation_dataset"
+
+# Cache configuration
+use_dataset_cache: true
+dataset_cache_dir: "./.dataset_cache"

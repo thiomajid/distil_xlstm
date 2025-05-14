@@ -1,0 +1,33 @@
+# Dataset configurations for distillation dataset creation
+
+c4:
+  dataset_url: "allenai/c4"
+  data_subset: null
+  data_split: "train"
+  text_column: "text"
+  max_seq_length: 2048
+  num_samples: 10000
+
+pile:
+  dataset_url: "EleutherAI/pile"
+  data_subset: null
+  data_split: "train"
+  text_column: "text"
+  max_seq_length: 2048
+  num_samples: 10000
+
+wikitext:
+  dataset_url: "wikitext"
+  data_subset: "wikitext-103-v1"
+  data_split: "train"
+  text_column: "text"
+  max_seq_length: 2048
+  num_samples: 10000
+
+fineweb:
+  dataset_url: "HuggingFaceFW/fineweb-edu"
+  data_subset: "default"
+  data_split: "train"
+  text_column: "text"
+  max_seq_length: 2048
+  num_samples: 10000
