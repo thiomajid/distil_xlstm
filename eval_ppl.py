@@ -10,7 +10,7 @@ import torch.utils
 import torch.utils.data
 from datasets import Dataset as HFDataset
 from einops import rearrange
-from huggingface_hub import snapshot_download, upload_file
+from huggingface_hub import snapshot_download, upload_file, create_repo
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -233,11 +233,24 @@ def main(cfg: DictConfig):
         json.dump(results, f, indent=2)
 
     # Upload results to Hugging Face Hub after the evaluation
+    is_pretrained_model = cfg.get("is_pretrained_model", False)
+    personal_repo_id = cfg.get("personal_repo_id", None)
+    repo_id = personal_repo_id if is_pretrained_model else config.hub_url
     if config.hub_token:
+
+        if is_pretrained_model:
+            create_repo(
+                repo_id=repo_id,
+                repo_type="model",
+                token=config.hub_token,
+                private=True,
+            )
+
+
         upload_file(
             path_or_fileobj=output_file,
             path_in_repo=output_file.name,
-            repo_id=config.hub_url,
+            repo_id=repo_id,
             token=config.hub_token,
             commit_message=f"Upload evaluation results for {model_name}",
         )
