@@ -10,7 +10,7 @@ import torch.utils
 import torch.utils.data
 from datasets import Dataset as HFDataset
 from einops import rearrange
-from huggingface_hub import snapshot_download, upload_file, create_repo
+from huggingface_hub import snapshot_download, upload_file, create_repo, repo_exists
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -245,7 +245,14 @@ def main(cfg: DictConfig):
     if config.hub_token:
 
         if is_pretrained_model:
-            create_repo(
+            exists = repo_exists(
+                repo_id=repo_id,
+                repo_type="model",
+                token=config.hub_token
+            )
+
+            if not exists:
+                create_repo(
                 repo_id=repo_id,
                 repo_type="model",
                 token=config.hub_token,
