@@ -243,22 +243,18 @@ def main(cfg: DictConfig):
     personal_repo_id = cfg.get("personal_repo_id", None)
     repo_id = personal_repo_id if is_pretrained_model else config.hub_url
     if config.hub_token:
-
         if is_pretrained_model:
             exists = repo_exists(
-                repo_id=repo_id,
-                repo_type="model",
-                token=config.hub_token
+                repo_id=repo_id, repo_type="model", token=config.hub_token
             )
 
             if not exists:
                 create_repo(
-                repo_id=repo_id,
-                repo_type="model",
-                token=config.hub_token,
-                private=True,
-            )
-
+                    repo_id=repo_id,
+                    repo_type="model",
+                    token=config.hub_token,
+                    private=True,
+                )
 
         upload_file(
             path_or_fileobj=output_file,
