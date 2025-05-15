@@ -167,6 +167,12 @@ def main(cfg: DictConfig):
 
     # Load model and tokenizer
     model, tokenizer = load_model(config)
+
+    # Add padding token if needed
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        logger.warning("Padding token set to EOS token.")
+
     logger.info(f"Model loaded successfully. Model type: {config.model_type}")
     logger.info(f"Parameter count: {count_parameters(model)}")
 
