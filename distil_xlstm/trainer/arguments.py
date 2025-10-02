@@ -25,7 +25,7 @@ class KDArguments(TrainingArguments):
         metadata={"help": "Name of the model used as teacher model on Hugging Face"},
     )
 
-    quantize_teacher: bool = field(default=True)
+    quantize_teacher: bool = field(default=False)
     trust_remote_code: bool = field(default=True)
 
     features: list[str] = field(

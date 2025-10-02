@@ -25,7 +25,7 @@ class KDTrainer(Trainer):
         super().__init__(
             args=args,
             model=student_model,
-            processing_class=tokenizer,
+            tokenizer=tokenizer,
             **kwargs,
         )
 

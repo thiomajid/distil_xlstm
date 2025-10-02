@@ -42,9 +42,6 @@ def main(cfg: DictConfig):
     args = parser.parse_dict(OmegaConf.to_container(cfg["trainer"], resolve=True))[0]
     args = cast(KDArguments, args)
 
-    logger.info("Trainer arguments:")
-    pprint(args)
-
     logger.info("Loading teacher model and tokenizer...")
     # Load teacher model and tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
