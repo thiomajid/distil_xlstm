@@ -66,7 +66,6 @@ def get_dataset(
                 split=split,
                 streaming=True,
                 token=token,
-                trust_remote_code=trust_remote_code,
             )
         else:
             data_stream = load_dataset(
@@ -74,7 +73,6 @@ def get_dataset(
                 split=split,
                 streaming=True,
                 token=token,
-                trust_remote_code=trust_remote_code,
             )
 
         data_points = []

@@ -26,7 +26,11 @@ from distil_xlstm.utils import (
 )
 
 
-@hydra.main(config_path="./configs", config_name="train_config")
+@hydra.main(
+    config_path="./configs",
+    config_name="train_config",
+    version_base="1.2",
+)
 def main(cfg: DictConfig):
     # Set up logging
     logging.basicConfig(
@@ -47,7 +51,6 @@ def main(cfg: DictConfig):
     tokenizer = AutoTokenizer.from_pretrained(
         args.teacher_name,
         token=args.hub_token,
-        trust_remote_code=args.trust_remote_code,
     )
 
     # Add padding token if needed
@@ -71,9 +74,8 @@ def main(cfg: DictConfig):
 
     teacher_model = AutoModelForCausalLM.from_pretrained(
         args.teacher_name,
-        torch_dtype=torch.float32,
+        dtype=torch.float32,
         token=args.hub_token,
-        trust_remote_code=args.trust_remote_code,
         quantization_config=quantization_config if args.quantize_teacher else None,
     )
 
