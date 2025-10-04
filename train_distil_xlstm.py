@@ -74,7 +74,7 @@ def main(cfg: DictConfig):
 
     teacher_model = AutoModelForCausalLM.from_pretrained(
         args.teacher_name,
-        dtype=torch.float32,
+        torch_dtype=torch.float32,
         token=args.hub_token,
         quantization_config=quantization_config if args.quantize_teacher else None,
     )
