@@ -60,6 +60,7 @@ class KDTrainer(Trainer):
         """Run teacher model forward pass (only used for online distillation)"""
         if self.teacher is None:
             raise ValueError("Teacher model is not available for online distillation")
+        inputs.pop("length")
 
         output = self.teacher(**inputs, output_hidden_states=True)
         return output
