@@ -10,7 +10,7 @@ import torch.utils
 import torch.utils.data
 from datasets import Dataset as HFDataset
 from einops import rearrange
-from huggingface_hub import snapshot_download, upload_file, create_repo, repo_exists
+from huggingface_hub import create_repo, repo_exists, snapshot_download, upload_file
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -130,15 +130,15 @@ def evaluate_perplexity(
             # shape: [batch, seq] -> [batch * (seq-1)]
             shifted_labels = rearrange(input_ids[..., 1:].contiguous(), "b s -> (b s)")
 
-            # Compute cross-entropy loss
+            # Compute per-position cross-entropy
             loss = torch.nn.functional.cross_entropy(
                 input=shifted_logits,
                 target=shifted_labels,
+                reduction="none",
             )
 
-            # Apply mask if available to consider only non-padding tokens
             if attention_mask is not None:
-                shift_mask = attention_mask[..., 1:].contiguous()
+                shift_mask = attention_mask[..., 1:].contiguous().view(-1)
                 loss = loss * shift_mask
                 num_tokens = shift_mask.sum().item()
             else:
